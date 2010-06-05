@@ -1,0 +1,36 @@
+ms-dns 8.8.8.8
+name HygenicNetwork
+
+auth
+-pap
++chap
+
+ktune
+
+#crtscts
+lock
+#-vj
+proxyarp
+noipx
+#maxfail 32
+idle 3600
+
+# no compression
+noccp
+nobsdcomp
+debug
+hide-password
+#mtu 1400
+#mru 1400
+
+connect-delay 5000
+
+logfd 2
+logfile /var/log/l2tpd.log
+	
+lcp-echo-interval 300 # lcp delay 5 minutes
+lcp-echo-failure 4
+
+ipv6 ::1,::2
+
+

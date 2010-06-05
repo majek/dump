@@ -1,0 +1,61 @@
+
+*nat
+-A POSTROUTING -o eth0 -j MASQUERADE
+COMMIT
+
+
+*filter
+
+# Allows all loopback (lo0) traffic and drop all traffic to 127/8 that doesn't use lo0
+-A INPUT -i lo -j ACCEPT
+-A INPUT ! -i lo -d 127.0.0.0/8 -j REJECT
+
+# Accepts all established inbound connections
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+-A INPUT -m policy --dir in --pol ipsec -p udp --dport 1701 -j ACCEPT
+-A INPUT -p udp --dport 1701 -j REJECT
+
+-A OUTPUT -m policy --dir out --pol ipsec -p udp --sport 1701 -j ACCEPT
+-A OUTPUT -p udp --sport 1701 -j REJECT
+
+
+# Allows all outbound traffic
+# You could modify this to only allow certain traffic
+-A OUTPUT -j ACCEPT
+
+# Allows HTTP and HTTPS connections from anywhere (the normal ports for websites)
+-A INPUT -p tcp -m state --state NEW --dport 22 -j ACCEPT
+-A INPUT -p tcp -m state --state NEW --dport 44 -j ACCEPT
+-A INPUT -p tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp --dport 443 -j ACCEPT
+
+-A INPUT -p udp --dport 500 -j ACCEPT
+-A INPUT -p udp --dport 4500 -j ACCEPT
+
+
+# Allows SSH connections for script kiddies
+# THE -dport NUMBER IS THE SAME ONE YOU SET UP IN THE SSHD_CONFIG FILE
+# -A INPUT -p tcp -m state --state NEW --dport 30000 -j ACCEPT
+
+# Now you should read up on iptables rules and consider whether ssh access 
+# for everyone is really desired. Most likely you will only allow access from certain IPs.
+
+# Allow ping
+-A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+
+# log iptables denied calls (access via 'dmesg' command)
+-A INPUT -m limit --limit 5/min -j LOG --log-prefix "iptables denied: " --log-level 7
+
+# Reject all other inbound - default deny unless explicitly allowed policy:
+-A INPUT -j DROP
+
+-A FORWARD -p tcp -m multiport --dports 25,137:139,445 -j REJECT --reject-with icmp-admin-prohibited
+-A FORWARD -p udp --dport    137:139 -j REJECT --reject-with icmp-admin-prohibited
+
+-A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A FORWARD --src 10.0.0.0/24 -o eth0 -m state --state NEW -j ACCEPT
+-A FORWARD -j DROP
+
+
+COMMIT
