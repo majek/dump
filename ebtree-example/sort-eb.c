@@ -13,7 +13,7 @@ struct item {
 int main()
 {
 	printf("sizeof(ebmb_node)=%i\n", (int)sizeof(struct ebmb_node));
-	struct eb_root root = EBMB_ROOT;
+	struct eb_root root = EB_ROOT_UNIQUE;
 	while (1) {
 		char buf[256];
 		char *r = fgets(buf, sizeof(buf), stdin);
@@ -25,16 +25,20 @@ int main()
 			buf[len-2] = '\0';
 			len--;
 		}
-		struct ebmb_node *node = ebst_lookup_len(&root, buf, len-1);
-		if (node) {
-			struct item *item = ebmb_entry(node, struct item, node);
-			item->counter ++;
+		struct item *item =					\
+			(struct item *)malloc(sizeof(struct item) + len);
+		item->counter = 1;
+		memcpy(item->key, buf, len);
+		struct ebmb_node *inserted_node =			\
+				ebst_insert(&root, &item->node);
+		if (inserted_node == &item->node) {
+				// ok
 		} else {
-			struct item *item =				\
-				(struct item *)malloc(sizeof(struct item) + len);
-			item->counter = 1;
-			memcpy(item->key, buf, len);
-			ebmb_insert(&root, &item->node, len);
+			// was added previously
+			struct item *old_item =				\
+				ebmb_entry(inserted_node, struct item, node);
+			old_item->counter ++;
+			free(item);
 		}
 	}
 
