@@ -132,7 +132,7 @@ struct hamt_node *__hamt_new_node(struct hamt_root *root, u64 mask, int len)
 	assert(len <= 64);
 	assert(popcount(mask) == len);
 	int size = sizeof(struct hamt_node) + len * sizeof(void*);
-	root->memory_used += size;
+	root->mem_histogram[size/sizeof(void*)]++;
 	struct hamt_node *node = (struct hamt_node *)malloc(size);
 	node->mask = mask;
 	return node;
@@ -142,7 +142,7 @@ void __hamt_free_node(struct hamt_root *root, struct hamt_node *node)
 {
 	int len = popcount(node->mask);
 	int size = sizeof(struct hamt_node) + len * sizeof(void*);
-	root->memory_used -= size;
+	root->mem_histogram[size/sizeof(void*)]--;
 	free(node);
 }
 
@@ -158,6 +158,10 @@ struct hamt_node *__hamt_new_node2(struct hamt_root *root,
 	struct hamt_node *node = __hamt_new_node(root, (1LL << bit_slice1) | (1LL << bit_slice2), 2);
 	node->slots[ slot_number(node->mask, bit_slice1) ] = to_node(item1);
 	node->slots[ slot_number(node->mask, bit_slice2) ] = to_node(item2);
+	printf("3e -> %016lx %016lx %016lx\n",
+	       node->mask,
+	       node->slots[0],
+	       node->slots[1]);
 	return node;
 }
 

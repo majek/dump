@@ -188,8 +188,8 @@ int main()
 		}
 		int len = strip(buf);
 
-		u64 hash = bernstein(buf, len, 4);
-			//sax_hash(buf, len);
+		u64 hash = //bernstein((unsigned char*)buf, len, 4);
+			sax_hash(buf, len);
 			//SuperFastHash2(buf, len);
 			//hash_djbx33((unsigned char*)buf, len);
 		//printf("%lu\n", hash);
@@ -198,8 +198,8 @@ int main()
 			(struct item *)malloc(sizeof(struct item));
 		item->hamt = HAMT_ITEM(hash);
 		item->value = hash;
-		struct item *i2 = hamt_insert(&root, &item->hamt);
-		if (i2 == item) {
+		struct hamt_item *n2 = hamt_insert(&root, &item->hamt);
+		if (n2 == &item->hamt) {
 			items ++;
 		} else {
 			free(item);
@@ -215,7 +215,16 @@ int main()
 	/* 		printf("%i -> %p %i\n", i, entry, item->value); */
 	/* 	} */
 	/* } */
-	printf("%i/%i = %.1f bytes per item\n", root.memory_used, items, root.memory_used/(float)items);
+	int i, sum=0;
+	for (i=0; i<65; i++) {
+		int used = (int)sizeof(void*)*i* (root.mem_histogram[i]);
+		printf("[%i] -> %i (%i bytes)\n",
+		       i,
+		       root.mem_histogram[i],
+		       used);
+		sum += used;
+	}
 
+	printf("%i/%i = %.3f bytes/item\n", sum, items, sum/(float)items);
 	return 0;
 }

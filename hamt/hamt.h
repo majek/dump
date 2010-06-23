@@ -4,15 +4,16 @@
 
 
 typedef u_int64_t u64;
+typedef u_int32_t u32;
 
 struct hamt_node;
 
 struct hamt_root {
-	int memory_used;
+	int mem_histogram[65];
 	struct hamt_node *node;
 };
 
-#define HAMT_ROOT (struct hamt_root) {0, NULL}
+#define HAMT_ROOT (struct hamt_root) {{0}, NULL}
 #define HAMT_ITEM(i) (struct hamt_item) {i}
 
 
