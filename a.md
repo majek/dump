@@ -30,3 +30,12 @@ This is an H2
 -->
 
 # comment
+
+> %info%
+>
+> #### Where info
+>
+> If you’re having trouble going through this tutorial you can post a message to
+>
+>
+
