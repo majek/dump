@@ -4,9 +4,7 @@ This is an H1
 This is an H2
 -------------
 
-![Alt text](03a4f9d568427553d881daba67bdb8ac.png "Optional title")
-![Alt text](img/03a4f9d568427553d881daba67bdb8ac.png "Optional title")
-![Alt text](./img/03a4f9d568427553d881daba67bdb8ac.png "Optional title")
+![Alt text](http://github.com/majek/dump/raw/master/img/03a4f9d568427553d881daba67bdb8ac.png "Optional title")
 
 
 <ul id="ProjectSubmenu">
