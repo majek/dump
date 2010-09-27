@@ -24,7 +24,7 @@ This is an H2
 </blockquote>
 
 
-<div class="info">
+<div class="hidden">
   abc
 </div>
 
