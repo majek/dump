@@ -4,10 +4,9 @@ This is an H1
 This is an H2
 -------------
 
-
-
-
-![Alt text](http://www.google.co.uk/logos/2010/googbday10-hp.jpg "Optional title")
+![Alt text](03a4f9d568427553d881daba67bdb8ac.png "Optional title")
+![Alt text](img/03a4f9d568427553d881daba67bdb8ac.png "Optional title")
+![Alt text](./img/03a4f9d568427553d881daba67bdb8ac.png "Optional title")
 
 
 <ul id="ProjectSubmenu">
