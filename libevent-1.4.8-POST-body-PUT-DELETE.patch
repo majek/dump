@@ -1,0 +1,78 @@
+diff -rup -x event-config.h libevent-1.4.8-stable-orig/evhttp.h libevent-1.4.8-stable/evhttp.h
+--- libevent-1.4.8-stable-orig/evhttp.h	2008-06-30 01:29:44.000000000 +0000
++++ libevent-1.4.8-stable/evhttp.h	2010-03-04 14:13:08.000000000 +0000
+@@ -176,7 +176,7 @@ struct evhttp *evhttp_start(const char *
+ /*
+  * Interfaces for making requests
+  */
+-enum evhttp_cmd_type { EVHTTP_REQ_GET, EVHTTP_REQ_POST, EVHTTP_REQ_HEAD };
++enum evhttp_cmd_type { EVHTTP_REQ_GET, EVHTTP_REQ_POST, EVHTTP_REQ_HEAD, EVHTTP_REQ_PUT, EVHTTP_REQ_DELETE };
+ 
+ enum evhttp_request_kind { EVHTTP_REQUEST, EVHTTP_RESPONSE };
+ 
+diff -rup -x event-config.h libevent-1.4.8-stable-orig/http.c libevent-1.4.8-stable/http.c
+--- libevent-1.4.8-stable-orig/http.c	2008-09-08 00:11:13.000000000 +0000
++++ libevent-1.4.8-stable/http.c	2010-03-04 16:03:01.000000000 +0000
+@@ -308,6 +308,12 @@ evhttp_method(enum evhttp_cmd_type type)
+ 	case EVHTTP_REQ_HEAD:
+ 		method = "HEAD";
+ 		break;
++	case EVHTTP_REQ_PUT:
++		method = "PUT";
++		break;
++	case EVHTTP_REQ_DELETE:
++		method = "DELETE";
++		break;
+ 	default:
+ 		method = NULL;
+ 		break;
+@@ -1265,6 +1271,10 @@ evhttp_parse_request_line(struct evhttp_
+ 		req->type = EVHTTP_REQ_POST;
+ 	} else if (strcmp(method, "HEAD") == 0) {
+ 		req->type = EVHTTP_REQ_HEAD;
++	} else if (strcmp(method, "PUT") == 0) {
++		req->type = EVHTTP_REQ_PUT;
++	} else if (strcmp(method, "DELETE") == 0) {
++		req->type = EVHTTP_REQ_DELETE;
+ 	} else {
+ 		event_debug(("%s: bad method %s on request %p from %s",
+ 			__func__, method, req, req->remote_host));
+@@ -1507,9 +1517,6 @@ evhttp_get_body_length(struct evhttp_req
+ 	else if (content_length == NULL &&
+ 	    strcasecmp(connection, "Close") != 0) {
+ 		/* Bad combination, we don't know when it will end */
+-		event_warnx("%s: we got no content length, but the "
+-		    "server wants to keep the connection open: %s.",
+-		    __func__, connection);
+ 		return (-1);
+ 	} else if (content_length == NULL) {
+ 		req->ntoread = -1;
+@@ -1536,23 +1543,19 @@ evhttp_get_body(struct evhttp_connection
+ {
+ 	const char *xfer_enc;
+ 	
+-	/* If this is a request without a body, then we are done */
+-	if (req->kind == EVHTTP_REQUEST && req->type != EVHTTP_REQ_POST) {
+-		evhttp_connection_done(evcon);
+-		return;
+-	}
+-	evcon->state = EVCON_READING_BODY;
+ 	xfer_enc = evhttp_find_header(req->input_headers, "Transfer-Encoding");
+ 	if (xfer_enc != NULL && strcasecmp(xfer_enc, "chunked") == 0) {
+ 		req->chunked = 1;
+ 		req->ntoread = -1;
+ 	} else {
+-		if (evhttp_get_body_length(req) == -1) {
+-			evhttp_connection_fail(evcon,
+-			    EVCON_HTTP_INVALID_HEADER);
++		int r = evhttp_get_body_length(req);
++		if(r == -1 || req->ntoread < 1) {
++			/* Majek: no content-lenght? no data passed. */
++			evhttp_connection_done(evcon);
+ 			return;
+ 		}
+ 	}
++	evcon->state = EVCON_READING_BODY;
+ 	evhttp_read_body(evcon, req);
+ }
+ 

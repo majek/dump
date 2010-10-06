@@ -1,0 +1,27 @@
+
+[XX] Ethernet layer
+    [*] multicast?
+    [*] promisc detection
+    [*] arp poison
+    [*] arp spoof
+
+[XX] IP layer
+    [*] IP spoofing
+    [*] local broadcast spoofing (192.168.1.255)
+        [x] sending
+        [x] receiving
+    [*] local router version: cisco
+        [x] open ports: 22, 80, 443
+
+[XX] Protocol layer
+    [*] http traffic (80)
+        [x] passive proxy
+            [o] version: squid
+            [o] CONNECT: 80, 443
+    [*] dns traffic (53)
+        [x] external queries proxied|allowed|denied
+        [x] ip-over-dns: 0.1KBps, 3.2sec rtt
+    [*] p2p probes
+        [x] tcp hole punching
+        [x] udp hole punching
+

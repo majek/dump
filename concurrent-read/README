@@ -1,0 +1,4 @@
+  * different options for fadvise - random? dontuse? +
+  * visualize input data
+  * random and sorted fadvise
+

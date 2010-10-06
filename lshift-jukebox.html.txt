@@ -1,0 +1,15 @@
+
+<script>
+function do_nothing(x){ 
+    alert(x);
+return true;
+}
+function get_href(x){ 
+    alert(x.getAttribute('href'));
+    return 'a';
+}
+</script>
+
+<a id='x' onClick='javascript: do_nothing( this.getAttribute("href") )' href="asd">asda</a>
+
+

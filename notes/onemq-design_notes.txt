@@ -1,0 +1,30 @@
+The bus consists of:
+ - disk storage layer (bdb/tc)
+ - transport protocol layer (stomp)
+ - naming/dispatching layer
+
+
+Main assumptions:
+ - messaging is about synchronizing the local state with the global state.
+
+Naming:
+ - /[protocol]/resource
+
+Actor and victim - resource identifiers (ie: /protocol/resource).
+
+Internal messaging api:
+ - send(victim, headers, body) # always succeeds
+ - recv() -> (victim, actor, headers, body)
+
+Api for a resource:
+ - subscribe(actor, victim)
+ - unsubscribe(actor, victim)
+ - send
+ - receive
+
+Example use cases:
+ - task queue
+ - chat
+ - mp3 streaming
+ - l2 cache
+

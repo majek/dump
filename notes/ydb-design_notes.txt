@@ -1,0 +1,131 @@
+Index:
+ - key: 20
+ - key_sz: 1
+ - logno: 2
+ - offset: 4
+ - size: 3
+ - checksum: 2
+ E: 32
+
+
+Data:
+ - key: 0...256
+ - key_sz: 1
+ - value: 0...?
+ - value_sz: 4
+ss
+
+
+Maximum distance between two log numbers - 16 bits. There can
+be no more than 65K log files.
+
+The intended behavior is to have reasonable restart time. The only limit should
+be disk speed, as during startup ydb has to read indexes from all the logs and
+reread last log. Reading last log shouldn't take too long. No more than a
+minute? With current drive speeds, that's about 8GB of log.
+
+One log can store up to 16 million _add_ operations. 
+The size of metadata for all added keys in one log shouldn't exte
+That means about 
+
+
+
+
+Struktura danych w ktorej mamy:
+ - search tree
+ - iterowanie pokolei po logu - dla gc.
+
+ - wiecej bedzie elementow usunietych *3
+ - minimum penalty na aktywny element
+ - minimum penalty na usuniety element
+
+Opcja raz:
+ - bitmapa bajtow nieuzywanych:
+    - active: 3ptr + 1data + key
+    - deleted: 3ptr + 1data + key
+    - bitmapa: 1 bit per 8 bytes
+
+ - pointery do elementow:
+    - active: 3ptr + 1data + key + 1(logno)
+    - inactive: 0
+    - bitmapa: 1ptr per item
+
+ - just'a'list
+    - active: 3ptr + 2ptr + 1data + key + 1(logno)
+    - inactive: 0
+    - bitmapa: 0
+
+ - pointery do elementow, garbage collected:
+    - active: 3ptr + 1data + key + 1(logno)
+    - inactive:
+    - bitmapa: 1ptr per item (gc if > 1/2 unused) = 1.5 ptr/active item
+
+
+a = 4+1 + 3*(4+1) + 0.5 -> 20.5
+b = 5+1 + 3*0 + 4       -> 10
+c = 7+1 + 3*0 + 0       -> 8
+d = 5+1 + 3*0 + 1.5     -> 7.5
+
+
+
+Assumptions:
+  - 1*read  for a get
+  - 1*write for a set
+  - 1*write for a del
+  - writes are appending only (immutable)
+  - writes go to a single file at a time
+
+
+In-memory data structure:
+ 1 - key size
+ K - key
+ 2 - log remainder
+ 6 - value offset
+ 4 - value size
+ 3 - record number
+
+ = 16 + K
+
+ Gc bookkeeping:	
+ 13+ - indexig 'record number'
+
+Index bookkeeping:
+ 13+ - indexing 'key'
+
+
+ = 39 + K for active item.
+
+
+
+
+There are at most 65k active log files. Every one of them can hold up to 8Gigs
+of log data with the limit of 16m item insertion logs. That sums up to a
+theoretical limit of 1024 billion items. Or, more meaningful limit of 256 billion
+items with overcommit factor of 4.
+
+For any practical use, I assume that the system won't be usefull for an
+installation with more than about a hundred million items.
+
+Memory usage is the biggest limiting factor. The system needs to keep
+all the metadata in memory to guarantee a constant access time to every item.
+Every item handled by the system uses approximately:
+ per_item_memory_cost = 16 bytes + key_size + ~26 bytes
+Where:
+ - 16 bytes is a constant metadata size for every item
+ - key size
+ - About 26 bytes is an indexing overhead. That may vary, depending on your
+   key entropy, but experiments show it should stay around 26 bytes per item.
+
+
+For small keys (let's assume 8 bytes) all that should account for:
+ - ~50 bytes per item
+ - or 21mln items per gigabyte of memory
+
+
+
+
+
+
+
+
+

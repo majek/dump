@@ -1,0 +1,344 @@
+
+High level assumptions:
+ - single threaded
+ - no implicit gc
+ - bulk set/get api
+ - documented memory cost per item
+ - adding new/closing old log file should have constant cost
+
+
+The memory cost for an item is (for 64 bit host):
+    - avl bookkeeping - 16B
+    - key size - 2B
+    - key (variable)
+    - log file number (implicit)
+    - value offset in a log - 6 bytes
+    - value size - 4 bytes
+    = 28B + key
+
+
+Memory per log:
+    - list of items - fixed 32MB
+    - bitmap of used items - 512KB
+
+
+Disk space per log:
+     - header (1)
+      * name/number
+      * timestamp
+     - item (*)
+      * magic
+      * key_sz
+      * key
+      * checksum
+      * flags
+      * val_sz?
+      * val?
+      * alignment to at least 32 bytes.
+     - index dump
+      * for every log stored in memory
+       = log number
+       = log bitmap (512KB)
+      * current index (32MB)
+      * currnet bitmap (512KB)
+
+
+
+
+
+
+	
+	
+	- 
+DLL_PUBLIC struct ydb_root *ydb_open(char *directory)
+{
+	safe_mkdir(directory);
+
+	if (!is_directory(directory)) {
+		log_perror("stat(\"%s\")", directory);
+		return NULL;
+	}
+
+	struct ydb_root *db = ydb_root_new();
+	db->directory = strdup(directory);
+
+	log_info(db, "****");
+	log_info(db, "Opening \"\".", directory);
+
+	char *filev[] = list_files(directory, "data_*.ydb");
+	for (; *filev; filev++) {
+		logfile_load(db, file);
+	}
+	int r = logfile_find_writer(db);
+
+	log_stats(db);
+	return db;
+}
+
+#ifndef _YDB_H
+#define _YDB_H
+
+#ifdef __cplusplus
+extern "C" {
+#  if 0
+} // Make emacs happy...
+#  endif
+#endif
+
+#ifndef bool
+#  define bool int
+#  define TRUE 1
+#  define FALSE 0
+#endif
+
+/* First, a bit of nomenclature:
+ * 'Item' means a pair of 'key' and 'value'. 'Key' is an identifier,
+ * and 'value' is a data blob. */
+
+/* All the functions that result in a log write return a 'float' value
+ * which stands for 'overcommit_ratio'. This value tells how much
+ * disk space is wasted due to log append-only structure.
+ * This number increases steadily for every operation, and may be
+ * reduced by calling ydb_gc() function. */
+
+struct ydb_root;
+
+/* ydb_open: Open or create a database. If the directory doesn't exist,
+ * it's created automatically. If that fails NULL is returned and errno
+ * is set accordingly. */
+DLL_PUBLIC struct ydb_root *ydb_open(char *directory);
+
+/* ydb_close: Closes database and frees all the data structures. */
+DLL_PUBLIC void ydb_close(struct ydb_root *);
+
+/* ydb_sync: Does fsync(2) on the writable log file. */
+DLL_PUBLIC void ydb_sync(struct ydb_root *);
+
+/* ydb_ratio: Count overcommit ratio for database. */
+DLL_PUBLIC float ydb_ratio(struct ydb_root *);
+
+/* ydb_gc: Run garbage collection cycle. This will move data from least used log
+ * on top of the newest log. At most 'max_transfer' bytes will be read/written.
+ * The value of 0 for 'max_transfer' indicates that single full log shall
+ * be freed. This function may be called multiple times to acheive desired
+ * overcommit ratio. */
+DLL_PUBLIC float ydb_gc(struct ydb_root *, int max_transfer);
+
+/* ydb_set: Set a value for an item. */
+DLL_PUBLIC bool ydb_set(struct ydb_root *,
+			char *key, unsigned short key_sz,
+			char *value, unsigned int value_sz);
+
+/* ydb_del: Remove an item. */
+DLL_PUBLIC bool ydb_del(struct ydb_root *,
+			char *key, unsigned short key_sz);
+
+
+/* Flags used by 'get' commands:
+ *
+ * YDB_GET or 0: Get data.
+ * YDB_PREFETCH: Request operating system to prefetch key values from the
+ *    hard drive. Don't touch the hard drive, don't read actual values.
+ * YDB_GETSIZE: Get information about value sizes for given key. Don't
+ *    read any values from the hard drive.
+ */
+enum ydb_get_flags {
+	YDB_GET = 0,
+	YDB_PREFETCH = 0x1,
+	YDB_GETSIZE = 0x2,
+};
+/* Possible outcomes of 'get' commands:
+ * YDB_NOTFOUND: Item doesn't exist.
+ * YDB_NOMEM: Given buffer is too small to store value in it.
+ */
+#define YDB_NOTFOUND ((unsigned int)-1)
+#define YDB_NOMEM ((unsigned int)-2)
+
+/* ydb_get: Get value an item. Results are put into buffer pointed
+ * by 'buffer'. If there is not enough space in buffer, YDB_NOMEM is returned.
+ * If key is not foud YDB_NOTFOUND is returned. */
+DLL_PUBLIC unsigned int ydb_get(struct ydb_root *,
+				char *key, unsigned short key_sz,
+				char *buffer, unsigned int buffer_sz,
+				int flags);
+
+/* ydb_setv:  Set multiple items. */
+struct ydb_vec {
+	char *key;
+	unsigned short key_sz;
+	char *value;
+	unsigned int value_sz;
+};
+DLL_PUBLIC bool ydb_setv(struct ydb_root *,
+			 struct ydb_vec *vec, unsigned int vec_sz);
+
+/* ydb_getv: Get values for multiple items. Results are put into buffer pointed
+ * by 'value'. 'Value_sz' is set accordingly. If there is not enough space in
+ * buffer, YDB_NOMEM is set into 'value_sz'. If key is not foud YDB_NOTFOUND. */
+DLL_PUBLIC void ydb_getv(struct ydb_root *,
+			 struct ydb_vec *vec, unsigned int vec_sz,
+			 int flags);
+
+/*
+ * ydb_enumv: Get list of all the keys.
+ *    'key' in the first vector tells the enumerator where to start.
+ *    If that value is NULL, enumerator starts from the first key.
+ *    Following vectors store pointer to key in 'key' field.
+ *    'key_sz' for every item is set accordingly.
+ *    In the 'id' field, an unique item for a keyis stored. It can
+ *    be used to identify if item was modified since previous enumeration.
+ *    In case when vector has more slots than available keys, the value NULL
+ *    in field 'key' is used to signalize that there are no more keys.
+ */
+struct ydb_enum_vec {
+	char *key;
+	unsigned short key_sz;
+	unsigned long long int id;
+};
+DLL_PUBLIC void ydb_enumv(struct ydb_root *,
+			  struct ydb_enum_vec *vec, unsigned int vec_sz);
+
+
+/* Delete multiple items. */
+DLL_PUBLIC bool ydb_delv(struct ydb_root *,
+			 struct ydb_vec *vec, unsigned int vec_sz);
+
+
+#ifdef __cplusplus
+}
+#endif
+#endif // _YDB_H
+
+
+/* Pick a log, which could give us the biggest disk free when gc'd.
+ * 'Current' log is excluded. There is also second assumption:
+ * the first and last logs should not be too 'distant' from each other.
+ * So we could pick up log with lowest number even if it's still used,
+ * to reduce distance delta between logs. Currently the distance might
+ * not be greater than 65k(2^16). */
+struct log *least_used_log();
+
+/* Should we close 'current' log and start a new one? The strategy
+ * might include:
+ *   - log exceeded reasonable size, further writes may result in
+ *     inacceptably slow log reading on restart. 8GB may be a good threshold.
+ *   - count of active items in current log is getting too close to maximum,
+ *     which is 16m(2^24) item sets (adds) per log. */
+int should_close_log();
+
+
+#include <inttypes.h>
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
+typedef u_int8_t u8;
+typedef u_int16_t u16;
+typedef u_int32_t u32;
+typedef u_int64_t u64;
+
+
+struct log_header {
+	u32 magic;
+	u32 checksum;
+	u64 dbid;
+	u64 logno;
+	u64 ctime;
+};
+
+struct log_record {
+	u32 magic;
+	u32 checksum;
+	u16 flags; 		/* deleted? */
+	u16 key_sz;
+	u32 value_sz;		/* length of value, without header */
+	char data[0];
+	/* First goes key and alignment. */
+	/* Second goes log_value_record */
+};
+
+struct log_value_record {
+	u32 checksum;
+	char value[0];
+};
+
+#define MAX_ACTIVE_ITEMS_PER_LOG (1024*1024)
+#define MAX_INDEX_SIZE (32*1024*1024)
+#define MEM_ALIGNMENT (8)
+
+/* This mask shows what are active items from that log at the time of closing
+ * current log. Once active_items goes to zero, the log can be gc'd.*/
+struct active_items {
+	u64 logno;
+	u32 active_items;
+	u64 memory_bitmap[(MAX_INDEX_SIZE/MEM_ALIGNMENT)/64];
+	struct stddev active_key_sz;
+	struct stddev active_value_sz;
+};
+
+struct log_footer {
+	u32 magic;
+	u32 checksum;
+
+	/* Refmask for every log that was used at the time of closing
+	 * current log. */
+	struct index_masks {
+		u64 offset;
+		u32 how_many;	/* How many logs are described? */
+		u32 checksum;
+	};
+
+	/* Snapshot of index for current log.  */
+	struct index {
+		u64 offset;
+		u32 size;
+		u32 checksum;
+	};
+	struct stddev stored_key_sz;
+	struct stddev stored_value_sz;
+};
+
+
+
+/* Must be aligned to 32MB or so. */
+struct log {
+	struct rb_node in_tree;
+	u16 logno_rem;
+
+	char *filename;
+	int fd;
+	struct log_header header;
+	struct log_footer footer;
+
+	struct active_items *active_items;
+
+	u32 items_blob_sz;
+	char items_blob[0];
+};
+
+struct writer {
+	struct log *log;
+	int fd;
+};
+
+struct ydb_root {
+	struct rb_root logs;
+
+	struct stddev active_key_sz;
+	struct stddev active_value_sz;
+
+	struct stddev stored_key_sz;
+	struct stddev stored_value_sz;
+
+	struct rb_root items;
+};
+
+struct item {
+	u32 value_size :32;
+	u64 value_offset :48;
+	u16 log_remainder :16;
+	u32 record_number :24;
+	u8 key_sz :8;
+	char key[0];
+} __attribute__ ((packed));
+
