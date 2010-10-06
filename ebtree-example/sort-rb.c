@@ -85,7 +85,8 @@ int main()
 	struct rb_node *node = rb_first(&root);
 	while (node) {
 		struct item *item = rb_entry(node, struct item, node);
-		printf("%8i %s\n", item->counter, item->key);
+		//printf("%8i %s\n", item->counter, item->key);
+		printf("%s\n", item->key);
 		node = rb_next(node);
 	}
 

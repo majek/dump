@@ -7,8 +7,8 @@ EBTREE_OBJS=\
 	ebtree/ebimtree.c
 
 sort-eb: *.c ebtree/* Makefile
-	gcc -Wall -g -O2 sort-eb.c $(EBTREE_OBJS) -o sort-eb
+	gcc -m32 -Wall -g -O2 sort-eb.c $(EBTREE_OBJS) -o sort-eb
 
 sort-rb: *.c rbtree/* Makefile
-	gcc -Wall -g -O2 sort-rb.c rbtree/rbtree.c -o sort-rb
+	gcc -m32 -Wall -g -O2 sort-rb.c rbtree/rbtree.c -o sort-rb
 

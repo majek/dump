@@ -19,7 +19,7 @@ struct hamt_root {
 
 struct hamt_node {
 	u64 mask;
-	struct hamt_node *slots[];
+	struct hamt_node *slots[0];
 };
 
 struct hamt_item {

@@ -114,7 +114,7 @@ struct hamt_item *hamt_insert(struct hamt_root *root, struct hamt_item *item)
 		}
 		while (bits_for_level(leaf->hash, level) ==
 		       bits_for_level(item->hash, level)) {
-			int bit_slice = bits_for_level(item->hash, level);
+			int bit_slice = bits_for_level(item->hash, level) ;
 			*node_ptr =  __hamt_new_node(root, 1LL << bit_slice, 1);
 			node_ptr = &(*node_ptr)->slots[0];
 			level++;
@@ -158,10 +158,10 @@ struct hamt_node *__hamt_new_node2(struct hamt_root *root,
 	struct hamt_node *node = __hamt_new_node(root, (1LL << bit_slice1) | (1LL << bit_slice2), 2);
 	node->slots[ slot_number(node->mask, bit_slice1) ] = to_node(item1);
 	node->slots[ slot_number(node->mask, bit_slice2) ] = to_node(item2);
-	printf("3e -> %016lx %016lx %016lx\n",
-	       node->mask,
-	       node->slots[0],
-	       node->slots[1]);
+	/* printf("3e -> %016lx %016lx %016lx\n", */
+	/*        node->mask, */
+	/*        node->slots[0], */
+	/*        node->slots[1]); */
 	return node;
 }
 
