@@ -20,15 +20,15 @@
  	((int)__builtin_ffsll(i)-1)
 #endif
 
-struct bitmap_root {
+struct bitmap {
 	int map_cnt;
 	uint64_t map[];
 };
 
-static inline struct bitmap_root *bitmap_new(int items) {
+static inline struct bitmap *bitmap_new(int items) {
 	int i = (items/64)+1;
-	struct bitmap_root *root = (struct bitmap_root *)	\
-		malloc(sizeof(struct bitmap_root) +
+	struct bitmap *root = (struct bitmap *)	\
+		malloc(sizeof(struct bitmap) +
 		       sizeof(uint64_t)*i);
 
 	root->map_cnt = i;
@@ -36,23 +36,23 @@ static inline struct bitmap_root *bitmap_new(int items) {
 	return root;
 }
 
-static inline void bitmap_free(struct bitmap_root *root) {
+static inline void bitmap_free(struct bitmap *root) {
 	free(root);
 }
 
-static inline void bitmap_set(struct bitmap_root *root, unsigned int pos) {
+static inline void bitmap_set(struct bitmap *root, unsigned int pos) {
 	root->map[pos/64] |= 1ULL << (pos % 64);
 }
 
-static inline void bitmap_clear(struct bitmap_root *root, unsigned int pos) {
+static inline void bitmap_clear(struct bitmap *root, unsigned int pos) {
 	root->map[pos/64] &= ~(1ULL << (pos % 64));
 }
 
-static inline int bitmap_get(struct bitmap_root *root, unsigned int pos) {
+static inline int bitmap_get(struct bitmap *root, unsigned int pos) {
 	return !!(root->map[pos/64] & (1ULL << (pos % 64)));
 }
 
-static inline int bitmap_next(struct bitmap_root *root, int prev_pos) {
+static inline int bitmap_next(struct bitmap *root, int prev_pos) {
 	int i;
 	unsigned int pos = prev_pos+1;
 	uint64_t r = root->map[pos/64] >> (pos % 64);

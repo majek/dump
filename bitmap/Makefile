@@ -1,17 +1,17 @@
 CC=gcc
+PROJ=bitmap
 
 all: test
 
-test: bitmap-test
-	./bitmap-test
-	gcov -bc bitmap-test.h
+test: $(PROJ)-test
+	./$(PROJ)-test
+	gcov -bc $(PROJ)-test.c
 	python gcovst.py "" .
 
-bitmap.h: Makefile
-bitmap.c: bitmap.h
-bitmap-test.c: bitmap.c
-bitmap-test: bitmap-test.c
+$(PROJ).h: Makefile
+$(PROJ)-test.c: $(PROJ).h
+$(PROJ)-test: $(PROJ)-test.c
 	$(CC) -Wall -o $@ $^ -O3 -g --coverage
 
 clean:
-	rm -f bitmap-test *.gcov *.gcda *.gcno
+	rm -f $(PROJ)-test *.gcov *.gcda *.gcno

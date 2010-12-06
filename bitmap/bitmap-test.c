@@ -9,7 +9,7 @@
 
 
 int main() {
-	struct bitmap_root *bm = bitmap_new(1310);
+	struct bitmap *bm = bitmap_new(1310);
 	assert(bitmap_get(bm, 0) == 0);
 	bitmap_set(bm, 0);
 	assert(bitmap_get(bm, 0) == 1);
