@@ -13,7 +13,7 @@ cat << EOF > /etc/ppp/chap-secrets
 #user		*	"pass"		10.0.0.0/24
 a		*	"a"		10.0.0.0/24
 EOF
-
+chmod o-r /etc/ppp/chap-secrets
 
 
 [ ! -e /etc/ipsec.conf.orig ] || mv /etc/ipsec.conf /etc/ipsec.conf.orig
@@ -34,7 +34,7 @@ conn L2TP
         pfs=no
         rekey=no
 	type = transport # encrypting only payload
-	keyingtries = 3
+	keyingtries = 1
 	failureshunt = reject
 
 	# type = tunnel # encrypting full ip packet - MTU smaller by 32 bytes
@@ -59,8 +59,8 @@ conn L2TP
 	keyexchange=ike
 	# ikelifetime=240m
 
-	esp=aes128-sha1
-	ike=aes128-sha-modp1024
+	#esp=aes128-sha1
+	#ike=aes128-sha-modp1024
 EOF
 
 [ ! -e /etc/ipsec.secrets.orig ] || mv /etc/ipsec.secrets /etc/ipsec.secrets.orig
