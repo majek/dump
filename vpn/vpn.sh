@@ -227,3 +227,8 @@ chmod +x /etc/network/if-pre-up.d/iptablesload
 
 iptables-restore < /etc/iptables.up.rules
 
+/etc/init.d/xl2tpd restart
+/etc/init.d/ipsec restart
+
+
+
