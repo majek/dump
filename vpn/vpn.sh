@@ -3,8 +3,8 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get -qy update
 apt-get -qy install openswan xl2tpd
 
-IPADDRESS="1.1.1.1"
-SHAREDSECRET="password"
+#IPADDRESS="1.1.1.1"
+#SHAREDSECRET="password"
 
 [ ! -e /etc/ppp/chap-secrets.orig ] || mv /etc/ppp/chap-secrets /etc/ppp/chap-secrets.orig
 cat << EOF > /etc/ppp/chap-secrets
@@ -226,3 +226,4 @@ EOF
 chmod +x /etc/network/if-pre-up.d/iptablesload
 
 iptables-restore < /etc/iptables.up.rules
+
