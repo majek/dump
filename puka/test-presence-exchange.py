@@ -22,7 +22,7 @@ q2 = client.wait(promise)
 promise = client.exchange_declare(exchange="a", type="x-presence")
 client.wait(promise)
 
-promise = client.queue_bind(queue=q['queue'], exchange="a", routing_key='_')
+promise = client.queue_bind(queue=q['queue'], exchange="a", routing_key='listen')
 client.wait(promise)
 
 promise = client.queue_bind(queue=q1['queue'], exchange="a", routing_key="_")
