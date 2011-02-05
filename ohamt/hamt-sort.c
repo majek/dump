@@ -15,7 +15,7 @@ struct item {
 	char key[];
 };
 
-static uint128_t *hash(void *ptr)
+static uint128_t *hash(void *ud, void *ptr)
 {
 	struct item *item = (struct item*)ptr;
         return &item->hash;
@@ -25,7 +25,7 @@ static struct {
 	int histogram[42];
 } mem;
 
-static void *custom_malloc(int sz)
+static void *custom_malloc(size_t sz)
 {
 	int ptr_sz = sizeof(void *);
 	int ptrs = (sz+ptr_sz-1)/ptr_sz;
@@ -33,7 +33,7 @@ static void *custom_malloc(int sz)
 	return malloc(sz+8);
 }
 
-static void custom_free(int sz, void *ptr)
+static void custom_free(void *ptr, size_t sz)
 {
 	int ptr_sz = sizeof(void *);
 	int ptrs = (sz+ptr_sz-1)/ptr_sz;
@@ -73,7 +73,7 @@ struct item *new_item(char *key, int len) {
 int main()
 {
 	int items = 0;
-	struct hamt_root root = HAMT_ROOT(custom_malloc, custom_free, hash);
+	struct hamt_root root = HAMT_ROOT(custom_malloc, custom_free, hash, NULL);
 
 	while (1) {
 		char buf[1024];
@@ -116,15 +116,15 @@ int main()
 	}
 	fprintf(stderr, "%i/%i = %.3f bytes/item\n", sum, items, sum/(float)items);
 
-	/* while (1) { */
-	/* 	void *ptr = hamt_first(&root, &state); */
-	/* 	if (ptr == NULL) { */
-	/* 		break; */
-	/* 	} */
+	while (1) {
+		void *ptr = hamt_first(&root, &state);
+		if (ptr == NULL) {
+			break;
+		}
 
-	/* 	hamt_delete(&root, hash(ptr)); */
-	/* 	free(ptr); */
-	/* } */
+		hamt_delete(&root, hash(NULL, ptr));
+		free(ptr);
+	}
 
 	return 0;
 }

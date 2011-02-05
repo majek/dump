@@ -14,7 +14,7 @@
 #include <stdint.h>
  */
 
-#ifndef __uint128_t_definedo
+#ifndef __uint128_t_defined
 # define __uint128_t_defined
 typedef __uint128_t uint128_t;
 #endif
@@ -25,7 +25,7 @@ typedef __uint128_t uint128_t;
 
 struct hamt_slot {
 	uint64_t off:40;
-} __attribute__ ((packed));
+};// __attribute__ ((packed));
 
 struct hamt_node {
 	uint64_t mask;
@@ -35,9 +35,10 @@ struct hamt_node {
 struct hamt_root {
 	struct hamt_slot slot;
 
-	void *(*mem_alloc)(int size);
-	void (*mem_free)(int size, void *ptr);
-	uint128_t *(*hash)(void *item);
+	void *(*mem_alloc)(size_t size);
+	void (*mem_free)(void *ptr, size_t size);
+        uint128_t *(*hash)(void *ud, void *item);
+	void *hash_ud;
 };
 
 
@@ -48,8 +49,8 @@ struct hamt_state{
 };
 
 
-#define HAMT_ROOT(alloc, free, hash) \
-	(struct hamt_root) {{0}, alloc, free, hash}
+#define HAMT_ROOT(alloc, free, hash, hash_ud)			\
+	(struct hamt_root) {{0}, alloc, free, hash, hash_ud}
 
 
 /* Find the item that matches the hash.*/
@@ -63,6 +64,7 @@ void *hamt_insert(struct hamt_root *root, void *item);
 void *hamt_delete(struct hamt_root *root, uint128_t *hash);
 
 
+void *hamt_first(struct hamt_root *root, struct hamt_state *s);
 
 
 #endif // _HAMT_H
