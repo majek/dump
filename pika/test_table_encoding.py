@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
     channel = connection.channel()
 
-    r = channel.queue_declare(exclusive=True)
+    r = channel.queue_declare(arguments={'x-expires':10000L})
 
     h = {
             'a': 'a',
