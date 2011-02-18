@@ -5,18 +5,20 @@ sys.path.append("..")
 
 
 import puka
-
+import time
 
 clients = []
-for i in range(128):
+while True:
     client = puka.Client("amqp:///")
     promise = client.connect()
-    clients.append(client)
-
-
-while True:
     try:
-        puka.loop(clients)
+        client.wait(promise)
+        clients.append(client)
     except Exception, e:
-        print e
+        print "e", e
+        time.sleep(1)
+    if len(clients) > 900:
+        break
 
+print "waiting"
+puka.loop(clients)
