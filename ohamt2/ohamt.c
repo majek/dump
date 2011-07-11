@@ -450,7 +450,7 @@ void ohamt_delete_all(struct ohamt_root *root,
 /**************************************************************************/
 
 static inline void __ohamt_erase(struct ohamt_root *root,
-                                  struct ohamt_slot *slot)
+				 struct ohamt_slot *slot)
 {
 	if (!slot_is_leaf(*slot)) {
 		struct ohamt_node *node = slot_to_node(root->mem, *slot);
@@ -459,7 +459,7 @@ static inline void __ohamt_erase(struct ohamt_root *root,
 			__ohamt_erase(root, &node->slots[i]);
 		}
 		__ohamt_free_slot(root, *slot);
-		memset(&slot, 0, sizeof(struct ohamt_slot));
+		memset(slot, 0, sizeof(struct ohamt_slot));
 	}
 }
 
