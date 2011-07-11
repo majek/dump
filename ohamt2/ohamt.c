@@ -5,6 +5,9 @@
 
 #include <stdint.h>
 
+#include "config.h"
+#include "queue.h"
+#include "list.h"
 #include "ohamt.h"
 #include "ohamt_mem.h"
 
@@ -467,4 +470,10 @@ void ohamt_erase(struct ohamt_root *root)
 	}
 
 	__ohamt_erase(root, &root->slot);
+}
+
+void ohamt_allocated(struct ohamt_root *root,
+		     uint64_t *allocated_ptr, uint64_t *wasted_ptr)
+{
+	mem_allocated(root->mem, allocated_ptr, wasted_ptr);
 }

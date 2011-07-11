@@ -1,6 +1,6 @@
 
 all:
-	gcc -g -Wall -Wextra ohamt_mem.c ohamt.c ohamt_sort.c -lcrypto -oohamt_sort
+	gcc -O2 -g -fno-omit-frame-pointer  -Wall -Wextra ohamt_mem.c ohamt.c ohamt_sort.c -lcrypto -oohamt_sort
 
 
 in2:

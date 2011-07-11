@@ -9,70 +9,35 @@
 #include "config.h"
 #include "queue.h"
 #include "list.h"
+#include "ohamt.h"
+#include "ohamt_mem.h"
 #include "ohamt_bitmap.h"
 
 
-#define CHUNKS_ON_PAGE 1024
-#define PAGE_SLOTS_MAX (1 << 23)
-#define CHUNK_SIZE(width) (8 + 5 * (width))
-#define U_WIDTH(u) ((int)(u).node.swidth + 1)
 
 
-struct PACKED ohamt_slot {
-	char data[5];
-};
+/* struct PACKED ohamt_slot { */
+/* 	char data[5]; */
+/* }; */
 
-struct ohamt_node {
-	uint64_t mask;
-	struct ohamt_slot slots[];
-};
+/* struct ohamt_node { */
+/* 	uint64_t mask; */
+/* 	struct ohamt_slot slots[]; */
+/* }; */
 
-union PACKED item {
-	struct ohamt_slot slot;
-	struct PACKED node {
-		unsigned is_node:1;
-		unsigned index:10;
-		unsigned page_slot:23;
-		unsigned swidth:6;
-	} node;
-	uint64_t leaf;
-};
 
-struct mem {
-	int pages_allocated;
-	int cache_line_size;
 
-	struct list_head list_of_busy_pages;
-	struct list_head list_of_free_pages[64];
-	uint64_t pslots_mask[PAGE_SLOTS_MAX/sizeof(uint64_t)];
-	struct mem_page *pslots[PAGE_SLOTS_MAX];
-};
-
-struct mem_page {
-	struct list_head in_list;
-	struct queue_root queue_of_free_chunks;
-	int free_chunks;
-	int page_slot;
-	unsigned width;
-};
-
-struct mem_chunk {
-	struct queue_head in_queue;
-};
 
 static inline struct mem_page *page_alloc(struct mem *mem, unsigned width)
 {
-	mem->pages_allocated ++;
 	unsigned chunk_size = CHUNK_SIZE(width);
+	int sz = sizeof(struct mem_page) + chunk_size * CHUNKS_ON_PAGE + 3;
 	char *ptr;
-	int sz = sizeof(struct mem_page) + chunk_size * CHUNKS_ON_PAGE;
-	/* Add 3 to make valgrind happy (we pop 8 bytes in order to
-	 * pull last 5 bytes, valgrind doens't like going out of
-	 * bounds) */
-	sz = sz + 3;
 	if (posix_memalign((void*)&ptr, mem->cache_line_size, sz) != 0) {
 		abort();
 	}
+	mem->pages_allocated ++;
+	mem->allocated += sz;
 
 	struct mem_page *page = (struct mem_page *)ptr;
 	INIT_LIST_HEAD(&page->in_list);
@@ -95,9 +60,10 @@ static inline struct mem_page *page_alloc(struct mem *mem, unsigned width)
 static inline void page_free(struct mem *mem, struct mem_page *page,
 			     unsigned width)
 {
-	width = width;
+	int sz = sizeof(struct mem_page) + CHUNK_SIZE(width) * CHUNKS_ON_PAGE + 3;
 
 	mem->pages_allocated --;
+	mem->allocated -= sz;
 	bitmap_set(mem->pslots_mask, page->page_slot);
 	mem->pslots[page->page_slot] = NULL;
 	assert(page->free_chunks == CHUNKS_ON_PAGE);
@@ -105,22 +71,14 @@ static inline void page_free(struct mem *mem, struct mem_page *page,
 }
 
 
-static struct mem_chunk *slot_to_chunk(struct mem *mem, struct ohamt_slot slot)
-{
-	union item u = {.slot = slot};
-	struct mem_page *page = mem->pslots[u.node.page_slot];
-	return (struct mem_chunk *)((char*)page + sizeof(struct mem_page) +
-				    CHUNK_SIZE(U_WIDTH(u)) * u.node.index);
-}
-
-static struct ohamt_slot chunk_to_slot(struct mem_page *page,
-				       struct mem_chunk *chunk, unsigned width)
+static inline struct ohamt_slot chunk_to_slot(struct mem_page *page,
+					      struct mem_chunk *chunk, unsigned width)
 {
 	char *ptr = (char*)page + sizeof(struct mem_page);
-	assert((char*)chunk >= ptr);
-	assert(((char*)chunk - ptr) % CHUNK_SIZE(width) == 0);
+	/* assert((char*)chunk >= ptr); */
+	/* assert(((char*)chunk - ptr) % CHUNK_SIZE(width) == 0); */
 	unsigned index = ((char*)chunk - ptr) / CHUNK_SIZE(width);
-	assert(index < CHUNKS_ON_PAGE);
+	/* assert(index < CHUNKS_ON_PAGE); */
 
 	union item u = {.node = {.is_node = 1,
 				 .index = index,
@@ -130,37 +88,9 @@ static struct ohamt_slot chunk_to_slot(struct mem_page *page,
 }
 
 
-int slot_is_leaf(struct ohamt_slot slot)
-{
-	union item u = {.slot = slot};
-	return !u.node.is_node;
-}
-
-uint64_t slot_to_leaf(struct ohamt_slot slot)
-{
-	union item u = {.slot = slot};
-	assert(u.node.is_node == 0);
-	return u.leaf;
-}
-
-struct ohamt_node *slot_to_node(struct mem *mem, struct ohamt_slot slot)
-{
-	union item u = {.slot = slot};
-	assert(u.node.is_node);
-	struct mem_chunk *chunk = slot_to_chunk(mem, slot);
-	return (struct ohamt_node *)chunk;
-}
-
-struct ohamt_slot leaf_to_slot(uint64_t leaf)
-{
-	union item u = {.leaf = leaf};
-	assert(!u.node.is_node);
-	return u.slot;
-}
-
-
 struct ohamt_slot slot_alloc(struct mem *mem, unsigned width)
 {
+	mem->used += CHUNK_SIZE(width);
 	struct list_head *free_pages = &mem->list_of_free_pages[width-1];
 	struct mem_page *page;
 	if (!list_empty(free_pages)) {
@@ -169,7 +99,7 @@ struct ohamt_slot slot_alloc(struct mem *mem, unsigned width)
 		page = page_alloc(mem, width);
 		list_add(&page->in_list, free_pages);
 	}
-	assert(page->width == width);
+	/* assert(page->width == width); */
 
 	struct queue_head *qhead = queue_get(&page->queue_of_free_chunks);
 	struct mem_chunk *chunk = \
@@ -187,6 +117,7 @@ struct ohamt_slot slot_alloc(struct mem *mem, unsigned width)
 void slot_free(struct mem *mem, struct ohamt_slot slot)
 {
 	union item u = {.slot = slot};
+	mem->used -= CHUNK_SIZE(U_WIDTH(u));
 
 	struct list_head *free_pages = &mem->list_of_free_pages[U_WIDTH(u) - 1];
 	struct mem_page *page = mem->pslots[u.node.page_slot];
@@ -242,6 +173,8 @@ struct mem *mem_new()
 	if (mem->cache_line_size == -1) {
 		mem->cache_line_size = 64;
 	}
+	mem->allocated = 0;
+	mem->used = 0;
 	INIT_LIST_HEAD(&mem->list_of_busy_pages);
 	int i;
 	for(i=0; i < 64; i++) {
@@ -255,5 +188,18 @@ void mem_free(struct mem *mem)
 {
 	_mem_do_thrashing(mem);
 	assert(mem->pages_allocated == 0);
+	assert(mem->allocated == 0);
+	assert(mem->used == 0);
 	munmap(mem, sizeof(struct mem));
+}
+
+void mem_allocated(struct mem *mem,
+		   uint64_t *allocated_ptr, uint64_t *wasted_ptr)
+{
+	if (allocated_ptr) {
+		*allocated_ptr = mem->allocated;
+	}
+	if (wasted_ptr) {
+		*wasted_ptr = mem->allocated - mem->used;
+	}
 }

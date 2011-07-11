@@ -75,6 +75,9 @@ void ohamt_erase(struct ohamt_root *root);
 uint64_t ohamt_first(struct ohamt_root *root, struct ohamt_state *s);
 
 
+void ohamt_allocated(struct ohamt_root *root,
+		     uint64_t *allocated_ptr, uint64_t *wasted_ptr);
+
 
 #define OHAMT_NOT_FOUND (0)
 
