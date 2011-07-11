@@ -102,6 +102,8 @@ int main()
 	/* } */
 	/* fprintf(stderr, "%i/%i = %.3f bytes/item\n", sum, items, sum/(float)items); */
 
+	printf("sleep\n");
+	sleep(1);
 	while (1) {
 		struct ohamt_state state;
 		uint64_t hitem_no = ohamt_first(&root, &state);

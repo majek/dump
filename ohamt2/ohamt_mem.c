@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 #include "config.h"
 #include "queue.h"
@@ -16,6 +17,7 @@
 #define CHUNK_SIZE(width) (8 + 5 * (width))
 #define U_WIDTH(u) ((int)(u).node.swidth + 1)
 
+
 struct PACKED ohamt_slot {
 	char data[5];
 };
@@ -27,12 +29,12 @@ struct ohamt_node {
 
 union PACKED item {
 	struct ohamt_slot slot;
-	struct node {
+	struct PACKED node {
 		unsigned is_node:1;
 		unsigned index:10;
 		unsigned page_slot:23;
 		unsigned swidth:6;
-	} PACKED node;
+	} node;
 	uint64_t leaf;
 };
 
@@ -40,6 +42,7 @@ struct mem {
 	int pages_allocated;
 	int cache_line_size;
 
+	struct list_head list_of_busy_pages;
 	struct list_head list_of_free_pages[64];
 	uint64_t pslots_mask[PAGE_SLOTS_MAX/sizeof(uint64_t)];
 	struct mem_page *pslots[PAGE_SLOTS_MAX];
@@ -62,8 +65,12 @@ static inline struct mem_page *page_alloc(struct mem *mem, unsigned width)
 	mem->pages_allocated ++;
 	unsigned chunk_size = CHUNK_SIZE(width);
 	char *ptr;
-	if (posix_memalign((void*)&ptr, mem->cache_line_size, sizeof(struct mem_page) +
-			   chunk_size * CHUNKS_ON_PAGE) != 0) {
+	int sz = sizeof(struct mem_page) + chunk_size * CHUNKS_ON_PAGE;
+	/* Add 3 to make valgrind happy (we pop 8 bytes in order to
+	 * pull last 5 bytes, valgrind doens't like going out of
+	 * bounds) */
+	sz = sz + 3;
+	if (posix_memalign((void*)&ptr, mem->cache_line_size, sz) != 0) {
 		abort();
 	}
 
@@ -96,7 +103,6 @@ static inline void page_free(struct mem *mem, struct mem_page *page,
 	assert(page->free_chunks == CHUNKS_ON_PAGE);
 	free(page);
 }
-
 
 
 static struct mem_chunk *slot_to_chunk(struct mem *mem, struct ohamt_slot slot)
@@ -172,7 +178,7 @@ struct ohamt_slot slot_alloc(struct mem *mem, unsigned width)
 
 	if (unlikely(page->free_chunks == 0)) {
 		list_del(&page->in_list);
-		INIT_LIST_HEAD(&page->in_list);
+		list_add(&page->in_list, &mem->list_of_busy_pages);
 	}
 
 	return chunk_to_slot(page, chunk, width);
@@ -191,20 +197,19 @@ void slot_free(struct mem *mem, struct ohamt_slot slot)
 		       &page->queue_of_free_chunks);
 	page->free_chunks ++;
 
-	if (unlikely(page->free_chunks == 1 && list_empty(&page->in_list))) {
-		list_add(&page->in_list,
-			 free_pages);
-	}
+	if (unlikely(page->free_chunks == 1)) {
+		list_del(&page->in_list);
+		list_add(&page->in_list, free_pages);
+	} else
 	if (unlikely(page->free_chunks == CHUNKS_ON_PAGE)) {
-		if (!list_is_singular(free_pages)) {
-				list_del(&page->in_list);
-				page_free(mem, page, U_WIDTH(u));
-		} else {
+		if (unlikely(list_is_singular(free_pages))) {
 			/* Always keep one page hanging to avoid thrashing. */
+		} else {
+			list_del(&page->in_list);
+			page_free(mem, page, U_WIDTH(u));
 		}
 	}
 }
-
 
 static void _mem_do_thrashing(struct mem *mem)
 {
@@ -227,12 +232,17 @@ static void _mem_do_thrashing(struct mem *mem)
 
 struct mem *mem_new()
 {
-	struct mem *mem = calloc(1, sizeof(struct mem));
+	struct mem *mem = mmap(NULL, sizeof(struct mem),
+			   PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,
+			   -1, 0);
+	assert(mem != MAP_FAILED);
+
 	mem->pages_allocated = 0;
 	mem->cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 	if (mem->cache_line_size == -1) {
 		mem->cache_line_size = 64;
 	}
+	INIT_LIST_HEAD(&mem->list_of_busy_pages);
 	int i;
 	for(i=0; i < 64; i++) {
 		INIT_LIST_HEAD(&mem->list_of_free_pages[i]);
@@ -245,5 +255,5 @@ void mem_free(struct mem *mem)
 {
 	_mem_do_thrashing(mem);
 	assert(mem->pages_allocated == 0);
-	free(mem);
+	munmap(mem, sizeof(struct mem));
 }
