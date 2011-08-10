@@ -9,7 +9,7 @@ import puka
 import random
 import uuid
 
-what = 3
+what = 2
 
 if what == 1:
     BINDING_KEY = "app1.channel%s.event"
@@ -43,7 +43,7 @@ def main(m, n):
 
     queue = "%s" % (uuid_generate(),)
     promise = client.queue_declare(queue=queue,
-                                   auto_delete=True,
+                                   exclusive=True,
                                    durable=False)
     client.wait(promise)
 
