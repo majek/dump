@@ -1,0 +1,68 @@
+
+
+
+
+But, if you want to expose channels and synchronous + async paradigms, 
+it's not that easy. Promises are a good way of exposing sync and async
+paradigms, so let's assume we're using them (assuming you can block on
+a promise).
+
+Consider the following blocking Puka code:
+
+    promise = puka.queue_declare(xxx)
+    result = puka.wait(promise)
+
+
+All simple and easy. Let's go for something harder:
+
+    promise_consume = puka.basic_consume(xxx)
+
+    promise = puka.queue_declare(xxx)
+    result = puka.wait(promise)
+
+    message = puka.wait(promise_consume)
+
+
+All good again. It doesn't matter if the message was delivered
+just after first line, or during the queue_declare command.
+If so, we buffer it, until user explicitly asks for it.
+So the last line can block if the message wasn't there yet,
+or it can return buffered one.
+
+Now let's add async sauce:
+
+    def callback():
+        pass
+    promise_consume = puka.basic_consume(xxx, callback=callback)
+
+    promise = puka.queue_declare(xxx)
+    result = puka.wait(promise)
+
+
+Okay, what happens here? The Puka way of handling this is defined.
+This code will _never_ run the callback, because we never
+listen on the `promise_consume`. If you want the callback to be
+run you have to execute something like that:
+ 
+    puka.wait(promise_consume)
+or
+    puka.wait_on_any_promise()
+
+
+All clear?
+How would you do the same thing with channels?
+
+    def callback():
+        pass
+    promise_consume = channel_1.basic_consume(xxx, callback=callback)
+
+    promise = channel_2.queue_declare(xxx)
+    result = channel_2.wait(promise)
+
+The big question is: what happens, if during `wait` on second channel an
+event from first channel will occur?
+
+If I was a user, I would expect to hear my async callback being 
+executed during the `wait`. AFAIK this is what Pika did.
+
+

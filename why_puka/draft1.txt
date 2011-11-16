@@ -1,0 +1,95 @@
+Here goes the problem:
+
+> > I'd like to benchmark Rabbit. I'd like to create multiple
+> > queues with few K (or few hundred K) messages sitting there.
+> > I'd like to open one connection, subscribe to those queues
+> > and consume from them with.
+> > I'd like to be able to measure if Rabbit can keep up with
+> > the speed long-term and I'd like to prove that the performance
+> > of rabbit doesn't degrade over time.
+
+The draft code looks like:
+
+   def handle_delivery():
+       basic_publish()
+       ch.basic_ack()
+       increase_stats()
+   basic_consume(queue=queue1, callback=handle_delivery)
+   basic_consume(queue=queue2, callback=handle_delivery)
+   basic_consume(queue=queue3, callback=handle_delivery)
+   basic_consume(queue=queue4, callback=handle_delivery)
+   asyncore.loop()
+
+
+All good. But I did it in June 2010 and we handled `channel.flow`
+differently - server could send us a command forbidding publishing.
+So, in some cases `basic_publish` could block (until channel-flow got
+cleared). It's changed nowadays but the problem remains the same:
+think about doing just anything synchronous in this callback.
+(basic_publish with confirms, creating a queue, transactions,
+or maybe doing something on a different broker, or just dummy
+`time.sleep()`).
+
+Of course doing something blocking would block other `basic_consumes`.
+We don't want that - we want only to "block" one basic_consume.
+
+I could get long into the details of Pika workings, but effectively
+this problem is (was?) unsolvable using Pika. Here is what I tried
+(Around June 2010):
+ https://github.com/majek/dump/blob/master/why_puka/stress_amqp_pika.py#L85-98
+
+I had to use amqplib - and threads instead (Around Oct 2010):
+ https://github.com/majek/dump/blob/master/why_puka/stress_amqp_amqplib.py#L115-133
+
+Just for comparison, the same stuff using Puka:
+ https://github.com/majek/dump/blob/master/why_puka/stress_amqp_puka.py#L60-69
+
+
+Let me try to phrase the problem more generally:
+
+ When you have a client that can do both sync and async,
+ and exposes channels, you may want to do blocking
+ things from within an async handler (basic_consume callback).
+ What this means: you may want to yield control to
+ other channels, without loosing current context.
+
+We have a quite similar "bug" in java and dotnet. Why
+aren't you allowed to do a blocking thing from a basic_consume
+callback?
+
+Also, how do you make useful software if you want to publish
+from basic_consume callback and publish may be blocking?
+
+Puka solves this issue. You can mix sync and async as you
+wish, you can block in any place. The contract between
+blocking and async is well defined, but this is only
+possible by hiding channels.
+
+Why? Consider this code:
+
+    def callback():
+        pass
+    channel.basic_consume(xxx, callback=callback)
+
+    channel.blocking_queue_declare(xxx)
+
+Do you expect the callback to be run if the message occurs during the
+blocking queue_declare? Or even better example:
+
+    def callback():
+        channel.blocking_queue_declare(xxx)
+    channel.basic_consume(xxx, callback=callback)
+    enter_event_loop_and_block()
+
+What happens if you get a mmessage during blocking queue_declare,
+do you expect `callback` to be re-entrant?
+
+
+
+Going back to the main question: I'm not sure how a client
+exposing channels could be much better than Pika.
+
+And no, you probably can't do Puka on top of Pika.
+
+Marek
+
