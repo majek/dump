@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta charset="UTF-8" />
+
+  <script type="text/javascript" src="lib/sockjs.js"></script>
+  <script type="text/javascript" src="static/jquery.min.js"></script>
+
+  <script type="text/javascript" src="config.js"></script>
+  <script type="text/javascript" src="lib/unicodeauto.js"></script>
+
+  <style type="text/css">
+      .cursor {
+        height: 30px;
+        width: 30px;
+        position: absolute;
+        border: 1px solid grey;
+      }
+  </style>
+
+</head>
+<body>
+  Progress <code id="progress"></code><br>
+  <code id="logs"
+        style="height:200px; overflow:auto; display: block; border: 1px grey solid;">
+  </code>
+
+<script>
+    var protocols = [
+                       'websocket',
+                       'xhr-streaming',
+                       'iframe-eventsource',
+                       'iframe-htmlfile',
+                       'xhr-polling',
+                       'iframe-xhr-polling',
+                       'jsonp-polling'];
+
+    function log(a) {
+            if ('console' in window && 'log' in window.console) {
+                console.log(a);
+            }
+            $('#logs').append($("<code>").text(a));
+            $('#logs').append($("<br>"));
+            $('#logs').scrollTop($('#logs').scrollTop()+10000);
+      }
+    function progress(c) {
+            $('#progress').text(sjs.protocol +' ' + c);
+    }
+    function done(bad, bad_count) {
+         log(sjs.protocol + ' 2083 + ' + bad_count);
+         log(bad.join(''));
+         sjs.close();
+         start();
+    }
+
+    var sjs;
+    function onopen() {
+            //log('connected ' + sjs.protocol);
+            run(sjs, progress, done);
+    };
+    function onclose(e) {
+            if(e.wasClean === false){
+                log('skipping ' + protocol);
+                start();
+             }
+    };
+    var protocol;
+    function start() {
+        if (protocols.length == 0) {
+            log('done');
+            return;
+        }
+        protocol = protocols.shift();
+
+        //log('[connecting] ' + protocol);
+        sjs = new SockJS(client_opts.url + '/echo', protocol, client_opts.sockjs_opts);
+        sjs.onopen = onopen
+        sjs.onclose = onclose;
+    };
+
+    start();
+</script>
+</body>
+</html>
