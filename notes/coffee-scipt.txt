@@ -1,0 +1,78 @@
+// o Inefficient code for loops
+
+// n = 10
+// for i in [1...n]
+//     console.log(i)
+
+// o Parenthesis aren't required:
+
+//  foo
+// vs
+//  foo()
+// vs
+//  foo a
+// vs
+//  foo(a)
+
+o Calling super with and without parenthesis isn't equal
+
+class Top
+class Child extends Top
+    constructor: (a) ->
+        super
+       vs.
+        super()
+       vs.
+        super(a)
+       vs.
+        super a
+
+o What about multiple inheritance?
+
+o Anonymous functions, not if there is a trailing parameter:
+
+fun(->console.log('x'))
+fun ->console.log('x')
+fun(->console.log('x'), 45) ?
+
+            cb = =>timeouted()
+            @setTimeout(cb, @timeout)
+
+
+// o Parenthesis again
+
+// console.log(a + b + c)
+// vs
+// console.log(a +b + c)
+
+o Multiline concatenation:
+
+console.log(a +
+            b)
+
+o One call inside the other
+console.log(A(a,b,c))
+vs
+console.log(new A(a,b,c))
+
+o in vs of
+
+o Errors are hard to read, line numbers don't match.
+
+o pass? do?
+
+o Fuck, parenthesiss again:
+
+constructor:
+   @didOpen
+   vs
+   @didOpen()
+
+o Unpacking doesn't do what you want
+
+[a,b] = [1,2]
+
+
+o Everything is an expression, yeah:
+
+@tref_close = setTimeout((() =>@didClose() ), @timeout_ms / 2)

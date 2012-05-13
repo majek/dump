@@ -1,0 +1,74 @@
+<style>
+.gist-meta {display: none;}
+.gist-table {border: 0px;}
+.gist-table td {border: 0px;}
+</style>
+
+<h1>CoffeeScript quirks</h1>
+<br>
+
+<p>Okay, okay. You can say that I belong to the YCombinator crowd and
+sometimes I do try bleeding edge technologies. This time I gave
+<a href="http://jashkenas.github.com/coffee-script/">CoffeeScript</a> a shot. If
+you don't know what it is, here's how the authors describe it:</p>
+<blockquote>
+<p>CoffeeScript is a little language that compiles into JavaScript.</p>
+</blockquote>
+<p>Recently I found myself writing more and more JavaScript, a big chunk
+of my work is server-side code for Node.js. Experimenting with
+CoffeeScript in that environment sounds reasonably.</p>
+<p>Below are my observations, bear in mind that they are written from a
+novice point of view.</p>
+<h2>Compilation + installation</h2>
+<p>CS works great out of the box. To install it type:</p>
+<pre><code>npm install coffeescript
+</code></pre>
+<p>and that's it. To compile CoffeeScript to JavaScript you may run:</p>
+<pre><code>coffee -o lib/ -c src/*.coffee
+</code></pre>
+<p>(I use <code>inotifywait</code> to automatically recompile files when they're
+modified, <a href="https://github.com/majek/sockjs-node/blob/master/run.sh">full script</a>)</p>
+<p>And here goes a first surprise, even though <code>coffee</code> is written in
+JavaScript, it's really fast! No need to maintain a makefile, you can
+simply recompile everything every time. My eleven files with 1.1k LoC
+of CS compile in 240 ms. Half of this time is warming up the compiler,
+it will take me quite some time to write enough code to notice the
+compilation time.</p>
+<h2>Parenthesis</h2>
+<p>My major complain about CS is the confusion caused by parenthesis-less
+syntax. Let's start with a basic example:</p>
+<table class="gist-table"><tr><td valign=top>
+<script src="https://gist.github.com/1133890.js"> </script>
+</td><td valign=top>
+<script src="https://gist.github.com/1133891.js"> </script>
+</td></tr></table>
+
+<p>That was quite simple, without parameters you need parenthesis to call
+a function. But if you dig a bit deeper, it get's messy:</p>
+<table class="gist-table"><tr><td valign=top>
+<script src="https://gist.github.com/1133903.js"> </script>
+</td><td valign=top>
+<script src="https://gist.github.com/1133904.js"> </script>
+</td></tr></table>
+
+<h2>Ranges are weird</h2>
+<p>I don't like the generated code for ranges, for example:</p>
+<table class="gist-table"><tr><td valign=top>
+<script src="https://gist.github.com/1133850.js"> </script>
+</td><td valign=top>
+<script src="https://gist.github.com/1133851.js"> </script>
+</td></tr></table>
+
+<p>Well, that could be a bit simpler. Similar example:</p>
+<table class="gist-table"><tr><td valign=top>
+<script src="https://gist.github.com/1133827.js"> </script>
+</td><td valign=top>
+<script src="https://gist.github.com/1133824.js"> </script>
+</td></tr></table>
+
+<p>In my opinion ranges syntax is quite confusing, can you guess what's
+the interpretation of the following lines?</p>
+<script src="https://gist.github.com/1133858.js"> </script>
+
+<h2>Classes and inheritance</h2>
+<p>My</p>

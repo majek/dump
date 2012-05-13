@@ -94,7 +94,7 @@ int main()
 	    ptr != NULL;
 	    ptr = hamt_next(&root, &state)) {
 		struct item *item = (struct item*)ptr;
-		printf("%s\n", item->key);
+		// printf("%s\n", item->key);
 		items ++;
 	}
 

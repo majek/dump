@@ -1,0 +1,30 @@
+diff --git a/hamt3/hamt.h b/hamt3/hamt.h
+index 48273fe..50d2224 100644
+--- a/hamt3/hamt.h
++++ b/hamt3/hamt.h
+@@ -26,14 +26,6 @@
+ # define unlikely(a) (a)
+ #endif
+ 
+-#define warn(...)							\
+-	do {								\
+-		char buf[512];						\
+-		snprintf(buf, sizeof(buf), __VA_ARGS__);		\
+-		printf("%s:%i %s()  %s\n", __FILE__, __LINE__, __func__, buf); \
+-	} while (0)
+-
+-#include <sys/types.h>
+ typedef u_int64_t u64;
+ 
+ 
+@@ -87,4 +79,10 @@ DLL_PUBLIC void *hamt_next(struct hamt_root *root, struct hamt_state *state);
+  * That's the only function that can be called during iteration. */
+ DLL_PUBLIC void *hamt_next_delete(struct hamt_root *root, struct hamt_state *state);
+ 
++#define hamt_for_each(ptr, root, state)		\
++	for(ptr = hamt_first((root), (state));	\
++	    ptr != NULL;			\
++	    ptr = hamt_next((root), (state)))
++
++
+ #endif //_HAMT_H

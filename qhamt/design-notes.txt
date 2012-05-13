@@ -1,0 +1,9 @@
+Used address space must be smaller than actual address
+space by at least XXX bits (3?). Otherwise nasty allocation
+bugs may occure when the density is high.
+ - not-enough bit space.
+
+
+Test:
+ - pessimistic distribution (ie: only last bits populated)
+ - optimistic distribution (ie: only top bits populated)

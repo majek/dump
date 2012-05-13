@@ -1,0 +1,44 @@
+--- src/proto_http-orig.c	2011-09-10 22:43:11.000000000 +0100
++++ src/proto_http.c	2012-03-07 00:06:10.000000000 +0000
+@@ -3560,8 +3560,10 @@ int http_process_request(struct session
+ 			     (((struct sockaddr_in *)&s->req->prod->addr.c.from)->sin_addr.s_addr & s->be->except_mask.s_addr)
+ 			     != s->be->except_net.s_addr)) {
+ 				int len;
++				unsigned int port;
+ 				unsigned char *pn;
+ 				pn = (unsigned char *)&((struct sockaddr_in *)&s->req->prod->addr.c.from)->sin_addr;
++				port = ntohs(((struct sockaddr_in *)&s->req->prod->addr.c.from)->sin_port);
+ 
+ 				/* Note: we rely on the backend to get the header name to be used for
+ 				 * x-forwarded-for, because the header is really meant for the backends.
+@@ -3575,7 +3577,7 @@ int http_process_request(struct session
+ 					len = s->fe->fwdfor_hdr_len;
+ 					memcpy(trash, s->fe->fwdfor_hdr_name, len);
+ 				}
+-				len += sprintf(trash + len, ": %d.%d.%d.%d", pn[0], pn[1], pn[2], pn[3]);
++				len += sprintf(trash + len, ": %d.%d.%d.%d:%u", pn[0], pn[1], pn[2], pn[3], port);
+ 
+ 				if (unlikely(http_header_add_tail2(req, &txn->req,
+ 								   &txn->hdr_idx, trash, len) < 0))
+@@ -3587,10 +3589,12 @@ int http_process_request(struct session
+ 			 * 'except' here, although it is mostly useless in this case.
+ 			 */
+ 			int len;
++			unsigned int port;
+ 			char pn[INET6_ADDRSTRLEN];
+ 			inet_ntop(AF_INET6,
+ 				  (const void *)&((struct sockaddr_in6 *)(&s->req->prod->addr.c.from))->sin6_addr,
+ 				  pn, sizeof(pn));
++			port = ntohs(((struct sockaddr_in6 *)(&s->req->prod->addr.c.from))->sin6_port);
+ 
+ 			/* Note: we rely on the backend to get the header name to be used for
+ 			 * x-forwarded-for, because the header is really meant for the backends.
+@@ -3604,7 +3608,7 @@ int http_process_request(struct session
+ 				len = s->fe->fwdfor_hdr_len;
+ 				memcpy(trash, s->fe->fwdfor_hdr_name, len);
+ 			}
+-			len += sprintf(trash + len, ": %s", pn);
++			len += sprintf(trash + len, ": %s:%u", pn, port);
+ 
+ 			if (unlikely(http_header_add_tail2(req, &txn->req,
+ 							   &txn->hdr_idx, trash, len) < 0))
