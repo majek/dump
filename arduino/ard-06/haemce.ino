@@ -53,7 +53,6 @@ void buzzer(int v) {
 	} else {
 		if (buzz_prev) {
 			analogWrite(BUZZER_PIN, 0);
-		} else {
 			buzz_prev = 0;
 		}
 	}
