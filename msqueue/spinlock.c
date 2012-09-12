@@ -30,11 +30,7 @@ static void _lock(unsigned int *lock) {
 }
 
 static void _unlock(unsigned int *lock) {
-#ifdef FAIL
-#else
-//	__sync_synchronize();
-	__asm__ __volatile__ ("sfence" ::: "memory");
-#endif
+	__asm__ __volatile__ ("" ::: "memory");
 	*lock = 0;
 }
 
