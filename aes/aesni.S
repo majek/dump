@@ -7,8 +7,7 @@
 
 /*
  * void expand_key128(struct key128_ctx *ctx, u8 *key);
- */               
-
+ */
 ENTRY(expand_key128)
     # %rdi - ctx pointer
     # %rsi - key pointer
@@ -54,7 +53,9 @@ _key_expansion_128:
     ret
 
 
-
+/*
+ * void ctr_stream(struct key128_ctx *ctx, u8 *out, u32 len, u8 *iv);
+ */
 ENTRY(ctr_stream)
     # %rdi - ctx
     # %rsi - out
@@ -105,7 +106,6 @@ ENTRY(ctr_stream)
 
 .loopexit:
     ret
-
 
 # Increment IV in %xmm0
 .align 4,0x90
