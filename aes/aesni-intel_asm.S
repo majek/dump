@@ -1977,9 +1977,11 @@ ENTRY(aesni_set_key)
 	call _key_expansion_192b
 	jmp .Ldec_key
 .Lenc_key128:
-	AESKEYGENASSIST 0x1 %xmm0 %xmm1		# round 1
+        aeskeygenassist 0x1, %xmm0, %xmm1;
+//	AESKEYGENASSIST 0x1 %xmm0 %xmm1		# round 1
 	call _key_expansion_128
-	AESKEYGENASSIST 0x2 %xmm0 %xmm1		# round 2
+        aeskeygenassist 0x2, %xmm0, %xmm1;
+//	AESKEYGENASSIST 0x2 %xmm0 %xmm1		# round 2
 	call _key_expansion_128
 	AESKEYGENASSIST 0x4 %xmm0 %xmm1		# round 3
 	call _key_expansion_128
@@ -2042,7 +2044,7 @@ ENTRY(aesni_enc)
 	ret
 
 /*
- * _aesni_enc1:		internal ABI
+ * _aesni_enc1x:		internal ABI
  * input:
  *	KEYP:		key struct pointer
  *	KLEN:		round count
@@ -2075,6 +2077,7 @@ _aesni_enc1:
 	movaps -0x30(TKEYP), KEY
 	AESENC KEY STATE
 .align 4
+ENTRY(xxx)
 .Lenc128:
 	movaps -0x20(TKEYP), KEY
 	AESENC KEY STATE
