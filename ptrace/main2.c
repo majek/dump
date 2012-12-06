@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 #include "list.h"
 #include "trace.h"
 
@@ -82,11 +81,13 @@ void process_syscall(void *procdata, int syscall_exit, struct parameters *params
 		int fd = open(buf, O_RDONLY);
 		if (fd == -1)
 			perror("open()");
+		snprintf(buf, sizeof(buf), "cat /proc/%i/maps", proc->pid);
+		system(buf);
 		struct timespec ts;
 		int r = pread(fd, &ts, sizeof(struct timespec), params->args[0]);
 		if (r != sizeof(struct timespec)) {
 			perror("pread()");
-			fprintf(stderr, "pread(fd, buf, %i, %lu) -> %i", sizeof(struct timespec), params->args[0], r);
+			fprintf(stderr, "pread(fd, buf, %i, %lx) -> %i\n", sizeof(struct timespec), params->args[0], r);
 		}
 		close(fd);
 	}
