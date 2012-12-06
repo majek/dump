@@ -1,6 +1,13 @@
+#define _LARGEFILE64_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 
 #include "list.h"
@@ -69,4 +76,18 @@ void process_stop(void *procdata, int type, int status) {
 void process_syscall(void *procdata, int syscall_exit, struct parameters *params) {
 	struct proc *proc = procdata;
 	fprintf(stderr, "#%i syscall %s %li\n", proc->pid, syscall_exit ? "-" : "_", params->syscall);
+	if (params->syscall == SYS_nanosleep) {
+		char buf[1024];
+		snprintf(buf, sizeof(buf), "/proc/%i/mem", proc->pid);
+		int fd = open(buf, O_RDONLY);
+		if (fd == -1)
+			perror("open()");
+		struct timespec ts;
+		int r = pread(fd, &ts, sizeof(struct timespec), params->args[0]);
+		if (r != sizeof(struct timespec)) {
+			perror("pread()");
+			fprintf(stderr, "pread(fd, buf, %i, %lu) -> %i", sizeof(struct timespec), params->args[0], r);
+		}
+		close(fd);
+	}
 }
