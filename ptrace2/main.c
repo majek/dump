@@ -2,6 +2,8 @@
 #include <stdlib.h>
 
 #include "trace.h"
+#include "syscalls.h"
+
 
 struct proc {
 	int pid;
@@ -14,11 +16,18 @@ static int process_continue(struct trace_process *process, int type, void *arg, 
 
 	case TRACE_SYSCALL_ENTER: {
 		struct trace_sysarg *sysarg = arg;
-		fprintf(stderr, "[.] #%i syscall 0x%x\n", proc->pid, sysarg->number);
+		char *name = "?";
+		if (sysarg->number >= 0 && (unsigned)sysarg->number < sizeof(syscall_table) / sizeof(char*)) {
+			if (syscall_table[sysarg->number]) 
+				name = syscall_table[sysarg->number];
+		}
+		fprintf(stderr, "[.] #%i syscall %-22s\t... ", proc->pid, name);
 		break; }
 		
-	case TRACE_SYSCALL_EXIT:
-		break;
+	case TRACE_SYSCALL_EXIT: {
+		struct trace_sysarg *sysarg = arg;
+		fprintf(stderr, " ret=%li\n", sysarg->ret);
+		break; }
 
 	case TRACE_SIGNAL:{
 		int *signal_ptr = (int*)arg;

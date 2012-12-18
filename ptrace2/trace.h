@@ -63,6 +63,6 @@ void trace_setregs(struct trace_process *process, struct trace_sysarg *sysarg);
 /* Copy data to and from a process. Data length and addres must be
    word-aligned. */
 int copy_from_user(struct trace_process *process, void *dst,
-		   long src, size_t len);
-int copy_to_user(struct trace_process *process, long dst,
+		   unsigned long src, size_t len);
+int copy_to_user(struct trace_process *process, unsigned long dst,
 		 void *src, size_t len);

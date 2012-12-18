@@ -27,7 +27,7 @@
 
 #ifndef PFATAL
 # define PFATAL(msg ...)						\
-	do { fprintf(stderr, msg); fprintf(stderr, "\n"); perror(""); \
+	do { fprintf(stderr, msg); fprintf(stderr, "\n"); perror("");	\
 		exit(EXIT_FAILURE); } while (0)
 #endif	/* !PFATAL */
 
@@ -96,7 +96,6 @@
 #endif
 
 
-
 struct trace {
 	int sfd;
 	int process_count;
@@ -121,8 +120,6 @@ struct trace_process {
 };
 
 static void trace_process_del(struct trace_process *process);
-
-
 
 struct trace *trace_new(trace_callback callback, void *userdata) {
 	struct trace *trace = calloc(1, sizeof(struct trace));
@@ -182,7 +179,7 @@ int trace_process_count(struct trace *trace) {
 static int mem_fd_open(int pid) {
 	char path[64];
 	snprintf(path, sizeof(path), "/proc/%i/mem", pid);
-	return open(path, O_RDWR | O_CLOEXEC);
+	return open(path, O_RDONLY | O_CLOEXEC);
 }
 
 static struct trace_process *trace_process_new(struct trace *trace, int pid) {
@@ -236,7 +233,9 @@ int trace_execvp(struct trace *trace, char **argv) {
 		sigaddset(&mask, SIGCHLD);
 		sigprocmask(SIG_UNBLOCK, &mask, NULL);
 
-		ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+		int r = ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+		if (r < 0)
+			PFATAL("ptrace(PTRACE_TRACEME)");
 		// Wait for the parent to catch up.
 		raise(SIGSTOP);
 		
@@ -441,7 +440,7 @@ void trace_setregs(struct trace_process *process, struct trace_sysarg *sysarg) {
 }
 
 static int copy_from_user_ptrace(struct trace_process *process, void *dst,
-				 long src, size_t len) {
+				 unsigned long src, size_t len) {
 	size_t words = len / sizeof(long);
 	long *word_src = (long*)src;
 	long *word_dst = dst;
@@ -462,7 +461,7 @@ static int copy_from_user_ptrace(struct trace_process *process, void *dst,
 	return faults * sizeof(long);
 }
 
-static int copy_to_user_ptrace(struct trace_process *process, long dst,
+static int copy_to_user_ptrace(struct trace_process *process, unsigned long dst,
 			       void *src, size_t len) {
 	size_t words = len / sizeof(long);
 	long *qword_src = src;
@@ -483,7 +482,7 @@ static int copy_to_user_ptrace(struct trace_process *process, long dst,
 }
 
 static int copy_from_user_fd(struct trace_process *process, void *dst,
-			     long src, size_t len) {
+			     unsigned long src, size_t len) {
 	int r = pread(process->mem_fd, dst, len, src);
 	if (r < 0)
 		PFATAL("pread(\"/proc/%i/mem\", offset=0x%lx, len=%u) = %i",
@@ -491,19 +490,8 @@ static int copy_from_user_fd(struct trace_process *process, void *dst,
 	return len - (unsigned)r;
 }
 
-#ifdef PROC_PID_MEM_WRITEABLE
-static int copy_to_user_fd(struct trace_process *process, long dst,
-			   void *src, size_t len) {
-	int r = pwrite(process->mem_fd, src, len, dst);
-	if (r < 0)
-		PFATAL("pwrite(\"/proc/%i/mem\", offset=0x%x, len=%u) = %i",
-		       process->pid, dst, len, r);
-	return len - (unsigned)r;
-}
-#endif
-
 int copy_from_user(struct trace_process *process, void *dst,
-		   long src, size_t len) {
+		   unsigned long src, size_t len) {
 	if (src % sizeof(long) || len % sizeof(long))
 		PFATAL("unaligned");
 
@@ -512,14 +500,10 @@ int copy_from_user(struct trace_process *process, void *dst,
 	return copy_from_user_ptrace(process, dst, src, len);
 }
 
-int copy_to_user(struct trace_process *process, long dst,
+int copy_to_user(struct trace_process *process, unsigned long dst,
 		 void *src, size_t len) {
 	if (dst % sizeof(long) || len % sizeof(long))
 		PFATAL("unaligned");
 
-	#ifdef PROC_PID_MEM_WRITEABLE
-	if (process->mem_fd != -1)
-		return copy_to_user_fd(process, dst, src, len);
-	#endif
 	return copy_to_user_ptrace(process, dst, src, len);
 }
