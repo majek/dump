@@ -21,9 +21,10 @@
  </MIT License>
 
 
- Solution based on code from:
+ Solution based on code by:
     Samuel Neves (supercop/crypto_auth/siphash24/little)
     djb (supercop/crypto_auth/siphash24/little2)
+    Jean-Philippe Aumasson (https://131002.net/siphash/siphash24.c)
 */
 
 #include <stdint.h>
