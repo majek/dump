@@ -1,14 +1,20 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <sys/time.h>
+
+uint64_t gettime_ns() {
+        struct timeval tv;
+	gettimeofday(&tv, NULL);
+        return (uint64_t)tv.tv_sec * 1000000000ULL + tv.tv_usec * 1000ULL;
+}
 
 
-typedef uint64_t u64;
+uint64_t siphash24(const char *in, unsigned long inlen, const char k[16]);
 
-uint64_t siphash(const char *in, unsigned long inlen, const char k[16]);
+#define REPEATS 1024
 
-
-u64 vectors[64] = {
+uint64_t vectors[64] = {
 	0x726fdb47dd0e0e31LLU, 0x74f839c593dc67fdLLU, 0x0d6c8009d9a94f5aLLU, 0x85676696d7fb7e2dLLU,
 	0xcf2794e0277187b7LLU, 0x18765564cd99a68dLLU, 0xcbc9466e58fee3ceLLU, 0xab0200f58b01d137LLU,
 	0x93f5f5799a932462LLU, 0x9e0082df0ba9e4b0LLU, 0x7a5dbbc594ddb9f3LLU, 0xf4b32f46226bada7LLU,
@@ -35,10 +41,16 @@ int main(int argc, char **argv) {
 	for (i=0; i<64; i++) plaintext[i] = i;
 
 
-	for (i=0; i<64; i++) {
-		assert(siphash(plaintext, i, key) == vectors[i]);
+	int j;
+	uint64_t t0, t1;
+	t0 = gettime_ns();
+	for (j=0; j<REPEATS; j++){
+		for (i=0; i<64; i++) {
+			assert(siphash24(plaintext, i, key) == vectors[i]);
+		}
 	}
+	t1 = gettime_ns();
 
-	printf("all tests passed\n");
+	printf("%i tests passed in %.3fms, %.0fns per test\n", REPEATS*64, (t1-t0)/1000000., (t1-t0)/(REPEATS*64.));
 	return 0;
 }
