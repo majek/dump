@@ -11,7 +11,7 @@ def load_file(filename):
     with open(filename, 'rb') as fd:
         for line in fd:
             # last element is always empty due to \n
-            yield [intern(w) for w in split_re.split(line.lower())][:-1]
+            yield [intern(w) for w in split_re.split(line.lower().replace('&amp;', '&'))][:-1]
 
 
 print "[.] Loading trigrams"
