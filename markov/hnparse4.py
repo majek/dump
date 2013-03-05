@@ -1,3 +1,13 @@
+'''
+Usage:
+
+$ python hnparse4.py cancer
+$ python hnparse4.py steve
+$ python hnparse4.py steve jobs
+$ python hnparse4.py why
+$ python hnparse4.py why your
+
+'''
 import cPickle as pickle
 import bisect
 import sys
@@ -38,24 +48,16 @@ def retrieve(labels, values, bigram):
     return r
 
 
-def run():
+def run(words):
     print "[.] Loading pickle"
     with open('dump2.pickle', 'r') as f:
-        list_of_trigrams = pickle.load(f)
-
-    trigrams_names  = [k for k, v in list_of_trigrams]
-    trigrams_values = [v for k, v in list_of_trigrams]
-    list_of_trigrams = None
+        trigrams_names  = pickle.load(f)
+        trigrams_values = pickle.load(f)
 
     print "[.] loaded"
 
-    pprint.pprint(retrieve(trigrams_names, trigrams_values, ('steve', 'jobs')))
-
+    pprint.pprint(retrieve(trigrams_names, trigrams_values, words))
 
 
 if __name__ == '__main__':
-    if False:
-        import doctest
-        doctest.testmod()
-    else:
-        run()
+    run(tuple(sys.argv[1:]))

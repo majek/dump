@@ -27,8 +27,13 @@ list_of_trigrams = list(trigrams.iteritems())
 trigrams = None
 list_of_trigrams.sort()
 
+trigrams_names  = [k for k, v in list_of_trigrams]
+trigrams_values = [v for k, v in list_of_trigrams]
+list_of_trigrams = None
+
 print "[.] Saving"
 with open('dump2.pickle', 'wb') as f:
-    pickle.dump(list_of_trigrams, f)
+    pickle.dump(trigrams_names, f)
+    pickle.dump(trigrams_values, f)
 
 print "[!] All done"
