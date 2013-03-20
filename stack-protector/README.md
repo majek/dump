@@ -9,7 +9,7 @@ static void fun() {
 ```
 
 ```
-$ objdump -d -M intel unprotected|grep "fun>:" -A 30|grep "ret" -B30
+$ objdump -d -M intel unprotected | awk '/<fun>:/,/ret/'
 
 08048404 <fun>:
  8048404:       55                      push   ebp
@@ -23,7 +23,7 @@ $ objdump -d -M intel unprotected|grep "fun>:" -A 30|grep "ret" -B30
 ```
 
 ```
-$ objdump -d -M intel protected|grep "fun>:" -A 30|grep "ret" -B30
+$ objdump -d -M intel protected | awk '/<fun>:/,/ret/'
 
 08048464 <fun>:
  8048464:       55                      push   ebp
@@ -54,7 +54,7 @@ void fun(char *s) {
 ```
 
 ```
-$ objdump -d -M intel unfortified |grep "fun>:" -A 30|grep "ret" -B30
+$ objdump -d -M intel unfortified | awk '/<fun>:/,/ret/'
 08048454 <fun>:
  8048454:       55                      push   ebp
  8048455:       89 e5                   mov    ebp,esp
@@ -69,7 +69,7 @@ $ objdump -d -M intel unfortified |grep "fun>:" -A 30|grep "ret" -B30
 ```
 
 ```
-$ objdump -d -M intel fortified |grep "fun>:" -A 30|grep "ret" -B30
+$ objdump -d -M intel fortified | awk '/<fun>:/,/ret/'
 08048474 <fun>:
  8048474:       55                      push   ebp
  8048475:       89 e5                   mov    ebp,esp
