@@ -1,42 +1,33 @@
-import functools
+import sys
 
-# How many ways there are to construct a row of length M?
-def ways(M):
-    if M >= 4:
-        s = ways(M-4) + ways(M-3) + ways(M-2) + ways(M-1)
-    elif M == 3:
-        s = 4 # ways(M-3) + ways(M-2) + ways(M-1)
-    elif M == 2:
-        s = 2 # ways(M-2) + ways(M-1)
-    elif M == 1:
-        s = 1 # ways(M-1)
-    elif M == 0:
-        s = 1
-    return s
 
 # How many ways of constructing a non-breakable wall of height N?
-def nonbreak(M, N):
+def nonbreak(M):
     # All possibilities:
-    all_ways = ways(M) ** N
+    all_ways = W_n[M]
 
     # Some of them are
     for i in xrange(1, M):
-        all_ways -= nonbreak(i, N) * ways(M-i) ** N
+        all_ways -= nonbreak(i) * W_n[M-i]
     return all_ways
 
 
 for case_no in xrange(input()):
+    print >> sys.stderr, case_no
     N, M = map(int, raw_input().split())
 
-    print nonbreak(M, N) % 1000000007
+    W = [1, 1, 2, 4]
+    while len(W) <= M:
+        W.append(W[-1] + W[-2] + W[-3] + W[-4])
 
+    W_n = [w ** N for w in W]
 
-# aaa
-# aab
-# abb
-# abc
+    nonbreak = [None] * (M + 1)
+    for m in xrange(M + 1):
+        all_ways = W_n[m]
 
-# a
+        for i in xrange(1, m):
+            all_ways -= nonbreak[i] * W_n[m-i]
+        nonbreak[m] = all_ways
 
-# aab
-# abc
+    print nonbreak[M] % 1000000007
