@@ -1,16 +1,6 @@
 import sys
 
 
-# How many ways of constructing a non-breakable wall of height N?
-def nonbreak(M):
-    # All possibilities:
-    all_ways = W_n[M]
-
-    # Some of them are
-    for i in xrange(1, M):
-        all_ways -= nonbreak(i) * W_n[M-i]
-    return all_ways
-
 
 for case_no in xrange(input()):
     print >> sys.stderr, case_no
