@@ -20,10 +20,13 @@ define private hidden {<2 x i64>, <2 x i64>}
 
        %bd3 = xor <2 x i64> %bd2, %ac2
 
-       %ac2_a = bitcast <2 x i64> %ac2 to <4 x i32>
-       %ca0_a = shufflevector <4 x i32> %ac2_a, <4 x i32> undef,
-                              <4 x i32> <i32 2, i32 3, i32 1, i32 0>
-       %ca0 = bitcast <4 x i32> %ca0_a to <2 x i64>
+       %ac2_4i = bitcast <2 x i64> %ac2 to <4 x i32>
+       %ca0_4i = shufflevector <4 x i32> %ac2_4i, <4 x i32> undef,
+                               <4 x i32> <i32 2, i32 3, i32 1, i32 0>
+       %ca0 = bitcast <4 x i32> %ca0_4i to <2 x i64>
+
+       ; %bd3
+       ; %ca0
 
        %r0 = insertvalue {<2 x i64>, <2 x i64>} undef, <2 x i64> %bd3, 0
        %r1 = insertvalue {<2 x i64>, <2 x i64>} %r0, <2 x i64> %ca0, 1
@@ -49,10 +52,10 @@ define private hidden {<2 x i64>, <2 x i64>}
 
        %bd3 = xor <2 x i64> %bd2, %ac2
 
-       %ac2_a = bitcast <2 x i64> %ac2 to <4 x i32>
-       %ca0_a = shufflevector <4 x i32> %ac2_a, <4 x i32> undef,
-                              <4 x i32> <i32 2, i32 3, i32 1, i32 0>
-       %ca0 = bitcast <4 x i32> %ca0_a to <2 x i64>
+       %ac2_4i = bitcast <2 x i64> %ac2 to <4 x i32>
+       %ca0_4i = shufflevector <4 x i32> %ac2_4i, <4 x i32> undef,
+                               <4 x i32> <i32 2, i32 3, i32 1, i32 0>
+       %ca0 = bitcast <4 x i32> %ca0_4i to <2 x i64>
 
        %r0 = insertvalue {<2 x i64>, <2 x i64>} undef, <2 x i64> %bd3, 0
        %r1 = insertvalue {<2 x i64>, <2 x i64>} %r0, <2 x i64> %ca0, 1

@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 	uint64_t a,b,c,d;
 	union pun p;
 
-	a = argc; b = 1; c = 2; d = 3;
+	a = argc; b = 10; c = 2; d = 3;
 	printf("good:\n");
 //	printf("%016lx %016lx\n%016lx %016lx\n", a, b, c, d);
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 	printf("%016lx %016lx\n%016lx %016lx\n", r.v[0], r.v[1], r.v[2], r.v[3]);
 
 
-	a = argc; b = 1; c = 2; d = 3;
+	a = argc; b = 10; c = 2; d = 3;
 	printf("bad:\n");
 //	printf("%016lx %016lx\n%016lx %016lx\n", a,b,c,d);
 	p.v = siphash_round(a,b,c,d);
