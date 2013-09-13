@@ -21,7 +21,7 @@ func main() {
 		if v > 4000000 {
 			break
 		}
-		if v % 2 != 0 {
+		if v%2 != 0 {
 			sum += v
 		}
 	}
