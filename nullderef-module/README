@@ -1,0 +1,4 @@
+Forked from:
+	https://github.com/nelhage/nullderef/
+
+sudo bash -c "insmod ./nullderef.ko; echo 1 > /sys/kernel/debug/nullderef/null_call";dmesg|grep RIP
