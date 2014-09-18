@@ -1,0 +1,54 @@
+--- erl_bif_guard-orig.c	2010-02-19 18:04:28.000000000 +0000
++++ erl_bif_guard.c	2010-02-28 13:04:48.000000000 +0000
+@@ -25,6 +25,8 @@
+ #  include "config.h"
+ #endif
+ 
++#define PREFETCH_LENGTH
++
+ #include "sys.h"
+ #include "erl_vm.h"
+ #include "global.h"
+@@ -161,7 +163,7 @@ BIF_RETTYPE round_1(BIF_ALIST_1)
+ 
+ BIF_RETTYPE length_1(BIF_ALIST_1)
+ {
+-    Eterm list;
++    Eterm list, list2;
+     Uint i;
+      
+     if (is_nil(BIF_ARG_1)) 
+@@ -173,7 +175,11 @@ BIF_RETTYPE length_1(BIF_ALIST_1)
+     i = 0;
+     while (is_list(list)) {
+ 	i++;
+-	list = CDR(list_val(list));
++	list2 = CDR(list_val(list));
++	#ifdef PREFETCH_LENGTH
++	__builtin_prefetch((char*)list2 + 128*((long)list2-(long)list));
++	#endif
++	list = list2;
+     }
+     if (is_not_nil(list))  {
+ 	BIF_ERROR(BIF_P, BADARG);
+@@ -329,6 +335,7 @@ double_to_integer(Process* p, double x)
+ Eterm erts_gc_length_1(Process* p, Eterm* reg, Uint live)
+ {
+     Eterm list = reg[live];
++    Eterm list2;
+     int i;
+ 
+     if (is_nil(list)) 
+@@ -336,7 +343,11 @@ Eterm erts_gc_length_1(Process* p, Eterm
+     i = 0;
+     while (is_list(list)) {
+ 	i++;
+-	list = CDR(list_val(list));
++	list2 = CDR(list_val(list));
++	#ifdef PREFETCH_LENGTH
++	__builtin_prefetch((char*)list2 + 128*((long)list2-(long)list));
++	#endif
++	list = list2;
+     }
+     if (is_not_nil(list))  {
+ 	BIF_ERROR(p, BADARG);

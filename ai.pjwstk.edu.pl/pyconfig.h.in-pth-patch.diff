@@ -1,0 +1,46 @@
+--- pyconfig.h.in	2007-10-22 20:52:38.000000000 +0200
++++ pyconfig.h.in	2007-10-22 20:53:39.000000000 +0200
+@@ -59,7 +59,7 @@
+ #undef HAVE_BROKEN_POSIX_SEMAPHORES
+ 
+ /* Define if pthread_sigmask() does not work on your system. */
+-#undef HAVE_BROKEN_PTHREAD_SIGMASK
++//DISABLED FOR PTH  #undef HAVE_BROKEN_PTHREAD_SIGMASK
+ 
+ /* Define to 1 if you have the `chown' function. */
+ #undef HAVE_CHOWN
+@@ -381,19 +381,20 @@
+ #undef HAVE_PROTOTYPES
+ 
+ /* Define if you have GNU PTH threads. */
+-#undef HAVE_PTH
++//ENABLED FOR PTH
++#define HAVE_PTH
+ 
+ /* Defined for Solaris 2.6 bug in pthread header. */
+-#undef HAVE_PTHREAD_DESTRUCTOR
++//DISABLED FOR PTH #undef HAVE_PTHREAD_DESTRUCTOR
+ 
+ /* Define to 1 if you have the <pthread.h> header file. */
+-#undef HAVE_PTHREAD_H
++//DISABLED FOR PTH #undef HAVE_PTHREAD_H
+ 
+ /* Define to 1 if you have the `pthread_init' function. */
+-#undef HAVE_PTHREAD_INIT
++//DISABLED FOR PTH #undef HAVE_PTHREAD_INIT
+ 
+ /* Define to 1 if you have the `pthread_sigmask' function. */
+-#undef HAVE_PTHREAD_SIGMASK
++//DISABLED FOR PTH #undef HAVE_PTHREAD_SIGMASK
+ 
+ /* Define to 1 if you have the <pty.h> header file. */
+ #undef HAVE_PTY_H
+@@ -758,7 +759,7 @@
+ #undef PACKAGE_VERSION
+ 
+ /* Defined if PTHREAD_SCOPE_SYSTEM supported. */
+-#undef PTHREAD_SYSTEM_SCHED_SUPPORTED
++//DISABLED FOR PTH #undef PTHREAD_SYSTEM_SCHED_SUPPORTED
+ 
+ /* Define to printf format modifier for Py_ssize_t */
+ #undef PY_FORMAT_SIZE_T

@@ -1,0 +1,105 @@
+diff -raup haproxy-ss-20080329/doc/configuration.txt haproxy-ss-20080329-uri/doc/configuration.txt
+--- haproxy-ss-20080329/doc/configuration.txt	2008-03-28 18:19:05.000000000 +0100
++++ haproxy-ss-20080329-uri/doc/configuration.txt	2008-04-12 17:33:04.000000000 +0200
+@@ -744,6 +744,15 @@ balance <algorithm> [ <arguments> ]
+                   that changing a server's weight on the fly will have no
+                   effect.
+ 
++                  This algorithm can take two parameters 'len' and 'depth', both
++                  followed by positive integer number.
++                  'len' says, that the alogrithm should stop counting hash after
++                        n-th character in the uri
++                  'depth' informs that only first X directories should be used
++                        to count the hash
++                  Those options can be helpful when you want to balance servers
++                  based on the beginning of the uri.
++
+       url_param   The URL parameter specified in argument will be looked up in
+                   the query string of each HTTP request. If it is found
+                   followed by an equal sign ('=') and a value, then the value
+diff -raup haproxy-ss-20080329/include/proto/backend.h haproxy-ss-20080329-uri/include/proto/backend.h
+--- haproxy-ss-20080329/include/proto/backend.h	2008-03-28 18:19:05.000000000 +0100
++++ haproxy-ss-20080329-uri/include/proto/backend.h	2008-04-12 16:48:56.000000000 +0200
+@@ -159,17 +159,27 @@ static inline struct server *get_server_
+ {
+ 	unsigned long hash = 0;
+ 	int c;
++	int slashes = 0;
+ 
+ 	if (px->lbprm.tot_weight == 0)
+ 		return NULL;
+ 
+ 	if (px->lbprm.map.state & PR_MAP_RECALC)
+ 		recalc_server_map(px);
+-
++	
++	if(px->uri_len_limit)
++		uri_len = MIN(uri_len, px->uri_len_limit);
++	
+ 	while (uri_len--) {
+ 		c = *uri++;
+-		if (c == '?')
++		if (c == '/'){
++			slashes++;
++			if(slashes == px->uri_dirs_depth)
++				break;
++		}
++		else if (c == '?')
+ 			break;
++		
+ 		hash = c + (hash << 6) + (hash << 16) - hash;
+ 	}
+ 
+diff -raup haproxy-ss-20080329/include/types/proxy.h haproxy-ss-20080329-uri/include/types/proxy.h
+--- haproxy-ss-20080329/include/types/proxy.h	2008-03-28 18:19:05.000000000 +0100
++++ haproxy-ss-20080329-uri/include/types/proxy.h	2008-04-12 15:27:49.000000000 +0200
+@@ -165,6 +165,8 @@ struct proxy {
+ 	int  cookie_len;			/* strlen(cookie_name), computed only once */
+ 	char *url_param_name;			/* name of the URL parameter used for hashing */
+ 	int  url_param_len;			/* strlen(url_param_name), computed only once */
++	int  uri_len_limit;			/* character limit for uri balancing algorithm */
++	int  uri_dirs_depth;			/* directories(slashes) limit for uri balancing algorithm */
+ 	char *appsession_name;			/* name of the cookie to look for */
+ 	int  appsession_name_len;		/* strlen(appsession_name), computed only once */
+ 	int  appsession_len;			/* length of the appsession cookie value to be used */
+diff -raup haproxy-ss-20080329/src/backend.c haproxy-ss-20080329-uri/src/backend.c
+--- haproxy-ss-20080329/src/backend.c	2008-03-28 18:19:05.000000000 +0100
++++ haproxy-ss-20080329-uri/src/backend.c	2008-04-12 17:39:49.000000000 +0200
+@@ -1845,6 +1845,8 @@ int be_downtime(struct proxy *px) {
+  */
+ int backend_parse_balance(const char **args, char *err, int errlen, struct proxy *curproxy)
+ {
++	int i;
++	
+ 	if (!*(args[0])) {
+ 		/* if no option is set, use round-robin by default */
+ 		curproxy->lbprm.algo &= ~BE_LB_ALGO;
+@@ -1867,6 +1869,28 @@ int backend_parse_balance(const char **a
+ 	else if (!strcmp(args[0], "uri")) {
+ 		curproxy->lbprm.algo &= ~BE_LB_ALGO;
+ 		curproxy->lbprm.algo |= BE_LB_ALGO_UH;
++		for(i=1; i < 5; i+=2){
++			if (!*args[i])
++				break;
++			if(!strcmp(args[i], "len")){
++				if(!*args[i+1] || (atoi(args[i+1]) <= 0) ){
++					snprintf(err, errlen, "'balance uri len' accepts only positive integer as parameter. got %s.", args[i+1]);
++					return -1;
++				}
++				curproxy->uri_len_limit = atoi(args[i+1]) + 1; /* all urls start with / :P */
++			}
++			else if (!strcmp(args[i], "depth")){
++				if(!*args[i+1] || (atoi(args[i+1]) <= 0) ){
++					snprintf(err, errlen, "'balance uri depth' accepts only positive integer as parameter. got %s.", args[i+1]);
++					return -1;
++				}
++				curproxy->uri_dirs_depth = atoi(args[i+1]) + 1; /* all urls start with / :P */
++			}
++			else{
++				snprintf(err, errlen, "'balance uri' accepts only parameters 'len' and 'depth'. %s is given.", args[i+1]);
++				return -1;
++			}
++		}
+ 	}
+ 	else if (!strcmp(args[0], "url_param")) {
+ 		if (!*args[1]) {

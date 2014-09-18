@@ -1,0 +1,15 @@
+Index: tcpip.cc
+===================================================================
+--- tcpip.cc	(revision 7015)
++++ tcpip.cc	(working copy)
+@@ -1322,6 +1322,10 @@
+ static int numerrors = 0;
+ 
+ do {
++      printf("-- sendto in %s: sendto(%d, packet, %d, 0, %s, %d) --\n-- %s\n",
++            functionname, sd, len, inet_ntoa(sin->sin_addr), tolen,
++            ippackethdrinfo(packet, len) );
++        lamont_hdump((char*)packet, len);
+   if ((res = sendto(sd, (const char *) packet, len, flags, to, tolen)) == -1) {
+     int err = socket_errno();
+ 

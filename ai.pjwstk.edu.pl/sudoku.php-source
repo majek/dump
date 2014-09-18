@@ -1,0 +1,308 @@
+<?
+	function pre_count($sudoku) {
+		$output=array(
+			array(0,0,0,0,0,0,0,0,0), array(0,0,0,0,0,0,0,0,0), array(0,0,0,0,0,0,0,0,0),
+			array(0,0,0,0,0,0,0,0,0), array(0,0,0,0,0,0,0,0,0), array(0,0,0,0,0,0,0,0,0),
+			array(0,0,0,0,0,0,0,0,0), array(0,0,0,0,0,0,0,0,0), array(0,0,0,0,0,0,0,0,0)
+			);
+		for($y=0;$y<9;$y++)
+			for($x=0;$x<9;$x++) {
+				$val = $sudoku[$y][$x];
+				$out = array(0,0,0,0,0,0,0,0,0,0);
+				$out[$val] = 1;
+				if($val==0) {
+					$row = array(1,1,1,1,1,1,1,1,1,1);
+					$col = array(1,1,1,1,1,1,1,1,1,1);
+					$box = array(1,1,1,1,1,1,1,1,1,1);
+					for($i=0;$i<9;$i++)
+						$row[ $sudoku[$y][$i] ]=0;
+					for($i=0;$i<9;$i++)
+						$col[ $sudoku[$i][$x] ]=0;
+					$yy = floor($y/3)*3;
+					$xx = floor($x/3)*3;
+					//echo($yy." ".($yy+3)."   ".$xx." ".($xx+3)."<BR>\n");
+					for($i=$yy;$i<$yy+3;$i++)
+						for($j=$xx;$j<$xx+3;$j++)
+							$box[ $sudoku[$i][$j] ]=0;
+					$counter=0;
+					for($pp=1; $pp<10; $pp++)
+						if($row[$pp] && $col[$pp] && $box[$pp]) {
+							$out[$pp] = 1;
+							$counter++;
+							$sample=$pp;
+						}
+					$output[$y][$x] = $out;
+					if($counter==1)
+						$sudoku[$y][$x]=$pp;
+				}
+				else
+					$output[$y][$x] = $out;
+			}
+		for($y=0;$y<9;$y++)
+			for($x=0;$x<9;$x++) {
+				// ROW
+				$owner = array(-1,-1,-1,-1,-1,-1,-1,-1,-1,-1);
+				for($i=0;$i<9;$i++)
+					for($a=1;$a<10;$a++)
+						if($output[$y][$i][$a]) {
+							if($owner[$a]==-1)
+								$owner[$a]=$i;
+							else
+								$owner[$a]=-2;
+						}
+				for($a=1;$a<10;$a++)
+					if($owner[$a]>=0) {
+						$out = array(0,0,0,0,0,0,0,0,0,0);
+						$out[$a]=1;
+						$output[$y][$owner[$a]]=$out;
+						$sudoku[$y][$owner[$a]]=$a;
+					}
+				// COL
+				$owner = array(-1,-1,-1,-1,-1,-1,-1,-1,-1,-1);
+				for($i=0;$i<9;$i++)
+					for($a=1;$a<10;$a++)
+						if($output[$i][$x][$a]) {
+							if($owner[$a]==-1)
+								$owner[$a]=$i;
+							else
+								$owner[$a]=-2;
+						}
+				for($a=1;$a<10;$a++)
+					if($owner[$a]>=0) {
+						$out = array(0,0,0,0,0,0,0,0,0,0);
+						$out[$a]=1;
+						$output[$owner[$a]][$x]=$out;
+						$sudoku[$owner[$a]][$x]=$a;
+					}
+				// BOX
+				$owner = array(-1,-1,-1,-1,-1,-1,-1,-1,-1,-1);
+				$yy = floor($y/3)*3; $xx = floor($x/3)*3;
+				for($i=$yy;$i<$yy+3;$i++)
+				for($j=$xx;$j<$xx+3;$j++)
+					for($a=1;$a<10;$a++)
+						if($output[$i][$j][$a]) {
+							if($owner[$a]==-1)
+								$owner[$a]=$i*10+$j;
+							else
+								$owner[$a]=-2;
+						}
+				for($a=1;$a<10;$a++)
+					if($owner[$a]>=0) {
+						$out = array(0,0,0,0,0,0,0,0,0,0);
+						$out[$a]=1;
+						$output[floor($owner[$a]/10)][$owner[$a]%10]=$out;
+						$sudoku[floor($owner[$a]/10)][$owner[$a]%10]=$a;
+					}
+				
+			}
+		return($output);
+	}
+	
+	function show_and_count($sudoku){
+		global $counted_sudoku;
+		$steps = 0;
+		do{
+		$steps++;
+		$positive = 0;
+		$sudokuc = pre_count($sudoku);
+		echo("<H3>STEP #$steps</H3>\n");
+		echo("<TABLE BORDER=1>\n");
+		for($y=0;$y<9;$y++){
+			if($y % 3 == 0 && $y) 
+				echo("<TR STYLE=\"background-color: black;max-height: 3px;\"><TD COLSPAN=11></TD></TR>");
+			echo("<TR>");
+			for($x=0;$x<9;$x++) {
+				$val = $sudoku[$y][$x];
+				$text = "[$y][$x] = $val    ";
+				$style="";
+				if($val==0) {
+					$counter=0;
+					for($a=1;$a<10;$a++)
+						if($sudokuc[$y][$x][$a]) {
+							$counter++;
+							$text.="$a|";
+							$sample=$a;
+						}
+					if($counter==1) {
+						$style="background-color:red;";
+						$val=$sample;
+						$sudoku[$y][$x]=$sample;
+						$positive++;
+					}
+					else {
+						$val="&nbsp;";
+					}
+					$text = substr($text,0,strlen($text)-1);
+				}
+				if($x % 3 == 0 && $x)
+					echo("<TD STYLE=\"background-color: black;max-width: 3px;\"></TD>");
+				echo("<TD onMouseOver=\"window.status='$text';\" STYLE=\"$style\">".$val."</TD>");
+			}
+			echo("</TR>\n");
+		}
+		echo("</TABLE><BR>\n");
+		}while($positive);
+		$counted_sudoku = $sudoku;
+		return($sudokuc);
+	}
+
+	function finished($out) 
+	{
+		for($y=0;$y<9;$y++)
+			for($x=0;$x<9;$x++){
+				$counter=0;
+				for($a=1;$a<10;$a++)
+					if($out[$y][$x][$a])
+						$counter++;
+				if($counter>1 || $counter==0)
+					return(0);
+				}
+		if(check($out)==1)
+			return(1);
+		else
+			return(0);
+	}
+	function check($output)
+	{
+		for($y=0;$y<9;$y++)
+		for($x=0;$x<9;$x++) {
+			$out = array(0,0,0,0,0,0,0,0,0,0);
+			for($i=0;$i<9;$i++)
+				for($a=1;$a<10;$a++) {
+					$out[$a]+=$output[$y][$i][$a];
+					if($out[$a]>1){
+						echo("<B>bada $y $i</B><br>\n");
+						return(0);
+					}
+				}
+
+			$out = array(0,0,0,0,0,0,0,0,0,0);
+			for($i=0;$i<9;$i++)
+				for($a=1;$a<10;$a++) {
+					$out[$a]+=$output[$i][$x][$a];
+					if($out[$a]>1){
+						echo("<B>badb $i $x</B><br>\n");
+						return(0);
+					}
+				}
+			$out = array(0,0,0,0,0,0,0,0,0,0);
+			$yy = floor($y/3)*3;
+			$xx = floor($x/3)*3;
+			for($i=$yy;$i<$yy+3;$i++)
+			for($j=$xx;$j<$xx+3;$j++)
+				for($a=1;$a<10;$a++) {
+					$out[$a]+=$output[$i][$j][$a];
+					if($out[$a]>1){
+						echo("<B>badc $i $j</B><br>\n");
+						return(0);
+					}
+				}
+		}
+		return(1);
+	}
+	
+	// LATWE
+	/*
+	$sudoku = array(
+		array(0,3,0, 0,5,0, 0,0,2),
+		array(2,0,0, 9,1,3, 8,5,0),
+		array(0,0,0, 6,0,0, 9,0,0),
+
+		array(0,0,3, 0,9,0, 7,0,8),
+		array(4,9,0, 1,0,7, 0,2,5),
+		array(5,0,7, 0,8,0, 1,0,0),
+
+		array(0,0,1, 0,0,9, 0,0,0),
+		array(0,8,6, 5,4,2, 0,0,1),
+		array(3,0,0, 0,7,0, 0,9,0)
+		);
+	*/
+	// SREDNIE
+	/*
+	$sudoku = array(
+		array(0,0,7, 4,6,0, 8,5,0),
+		array(1,0,0, 0,7,9, 4,0,3),
+		array(6,0,0, 0,0,0, 0,7,0),
+
+		array(0,0,5, 6,0,0, 0,0,0),
+		array(4,0,0, 0,9,0, 0,0,8),
+		array(0,0,0, 0,0,8, 5,0,0),
+
+		array(0,1,0, 0,0,0, 0,0,5),
+		array(2,0,4, 9,3,0, 0,0,6),
+		array(0,7,6, 0,4,1, 3,0,0),
+		);
+	*/
+	// PIEKIELNIE TRUDNE
+	$sudoku = array(
+		array(6,0,0, 0,0,0, 0,7,3),
+		array(9,0,0, 0,5,0, 0,0,0),
+		array(0,0,0, 3,0,2, 0,4,0),
+
+		array(0,0,0, 0,0,6, 0,8,9),
+		array(0,0,0, 4,3,1, 0,0,0),
+		array(1,2,0, 9,0,0, 0,0,0),
+
+		array(0,7,0, 2,0,9, 0,0,0),
+		array(0,0,0, 0,1,0, 0,0,8),
+		array(4,6,0, 0,0,0, 0,0,5));
+	// PIEKIELNIE TRUDNE2
+	$sudoku = array(
+		array(2,0,0, 3,0,0, 0,0,8),
+		array(0,3,1, 0,4,0, 2,0,0),
+		array(0,0,5, 9,0,0, 0,0,3),
+
+		array(0,0,0, 0,0,0, 3,0,0),
+		array(0,5,0, 2,0,1, 0,9,0),
+		array(0,0,8, 0,0,0, 0,0,0),
+
+		array(7,0,0, 0,0,9, 5,0,0),
+		array(0,0,9, 0,3,0, 1,7,0),
+		array(1,0,0, 0,0,5, 0,0,2));
+	// IWONY
+/*	$sudoku = array(
+		array(0,0,0, 0,0,0, 8,2,0),
+		array(1,0,0, 0,3,0, 0,0,0),
+		array(5,0,0, 0,4,9, 0,0,0),
+
+		array(0,0,6, 0,0,0, 0,0,0),
+		array(0,1,9, 8,0,7, 4,5,0),
+		array(0,0,0, 0,0,0, 7,0,0),
+
+		array(0,0,0, 1,5,0, 0,0,2),
+		array(0,0,0, 0,6,0, 0,0,9),
+		array(0,7,3, 0,0,0, 0,0,0),
+		);
+*/
+		
+	$out = show_and_count($sudoku);
+	for($y=0;$y<9;$y++)
+		for($x=0;$x<9;$x++)
+			$sudoku[$y][$x] = $counted_sudoku[$y][$x];
+
+	if(!finished($out)) {
+		for($y=0;$y<9;$y++)
+			for($x=0;$x<9;$x++){
+				$counter=0;
+				for($a=1;$a<10;$a++)
+					if($out[$y][$x][$a])
+						$counter++;
+				if($counter>1)
+					for($a=1;$a<11;$a++)
+						if($out[$y][$x][$a]) {
+							echo("<HR>\n");
+							echo("<H2>zakladam ze [$y][$x]=$a</H2>\n");
+							$sudoku[$y][$x]=$a;
+							$out2 = show_and_count($sudoku);
+							$sudoku[$y][$x]=0;
+
+							if(finished($out2)) {
+								exit(0);
+							}
+						}
+				
+			}
+		echo("<BR><H1>NOT DONE</H1><BR>\n");
+	}
+	
+?>
