@@ -69,10 +69,16 @@ def main(json_file):
     print 'temp: min=%.1f max=%.1f' % (t_min, t_max)
 
     C = [' '] * 30
-    for i in xrange(bands(t_max/2.5)):
-        C[i] = 'r'
-    for i in xrange(bands(t_min/2.5)):
-        C[i] = 'g'
+    if abs(t_min -t_max) < 2.5:
+        t_min -= 2.5
+    for i in xrange(bands(t_min/2.5, a=-10), bands(t_max/2.5, a=-10)):
+        if i < 0:
+            C[10+i] = 'g'
+        else:
+            C[i] = 'r'
+
+
+
 
 
     cloud = daily['cloudCover']
@@ -99,7 +105,8 @@ def main(json_file):
     for i in xrange(20):
         s.write()
         time.sleep(0.01)
-    s.sfd.close()
+    if s.sfd:
+        s.sfd.close()
 
 if __name__ == "__main__":
     try:
