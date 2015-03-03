@@ -244,7 +244,7 @@ class Client(object):
 
         xpc = {"cn": random_string(10),
                "tp": 'null',
-               "ppu": "http://hangoverapi.appspot.com/_ah/channel/xpc_blank",
+               "ppu": "http://curious-drive-87310.appspot.com/_ah/channel/xpc_blank",
                "lpu": "http://talkgadget.google.com/talkgadget/xpc_blank"}
         params = {'token': self.token,
                   'xpc': json.dumps(xpc)}
