@@ -1,0 +1,10 @@
+application: curious-drive-87310
+runtime: python27
+api_version: 1
+threadsafe: true
+version: 6
+
+handlers:
+- url: /.*
+  script: main.application
+
