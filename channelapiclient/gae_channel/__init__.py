@@ -204,7 +204,7 @@ class Client(object):
         try:
             (c, (clid, (ae, chan_body))) = talk_body
             if ae:
-                self._sid = ae
+                self.sid = ae
             if clid == self.clid and ae == 'ae' and c == 'c':
                 return chan_body
             else:
