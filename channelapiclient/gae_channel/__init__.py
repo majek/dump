@@ -24,6 +24,17 @@ import urllib2, urllib
 import json, re, random, string, logging, time
 import time, itertools, socket
 
+# noipv6
+import socket
+origGetAddrInfo = socket.getaddrinfo
+
+def getAddrInfoWrapper(host, port, family=0, socktype=0, proto=0, flags=0):
+    return origGetAddrInfo(host, port, socket.AF_INET, socktype, proto, flags)
+
+# replace the original socket.getaddrinfo by our version
+socket.getaddrinfo = getAddrInfoWrapper
+
+
 import talkparser
 
 #TODO: handle urllib2.HTTPError: HTTP Error 401: Token timed out. line 259, _connect
