@@ -18,6 +18,7 @@ def main():
         if len(data) != 180:
             print >> sys.stderr, "[!] invalid data on stdin"
             continue
+        print "[!] got data!" 
         sfd.write('\x00\x01\x02' + data)
         last_updated[0] = time.time()
 
