@@ -53,7 +53,10 @@ void loop() {
 	unsigned i;
 	for (i=0; i < sizeof(buf); i++) {
 		buf[i] = serial_read();
-                if (i >= 2 && buf[i-2] == 0xff && buf[i-1] == 0xff && buf[i] == 0xff) {
+                if (i >= 2 && buf[i-2] == 0xff && buf[i-1] == 0xff && buf[i-0] == 0xff) {
+                      buf[i-2] = 0;
+                      buf[i-1] = 0;
+                      buf[i-0] = 0;
                         break;
                 }
 	}
