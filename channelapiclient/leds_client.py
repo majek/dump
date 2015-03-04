@@ -16,7 +16,7 @@ def main():
     while True:
         data = raw_input()
         print "[!] got data! len=%d" % (len(data),)
-        if last_data[0] != data:
+        if last_data[0] == data:
             continue
         sfd.write('\xff\xff\xff' + data)
         last_updated[0] = time.time()
