@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 
 #define PIN 2
-#define PIXELS 90
+#define PIXELS 256
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
@@ -53,6 +53,9 @@ void loop() {
 	unsigned i;
 	for (i=0; i < sizeof(buf); i++) {
 		buf[i] = serial_read();
+                if (i >= 2 && buf[i-2] == 0xff && buf[i-1] == 0xff && buf[i] == 0xff) {
+                        break;
+                }
 	}
 
 	refresh_led();
