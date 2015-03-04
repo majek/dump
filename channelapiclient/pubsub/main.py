@@ -1,31 +1,15 @@
 import webapp2
-from google.appengine.api import channel
-import json
+from google.appengine.api import memcache
 
 
 class ChannelHandler(webapp2.RequestHandler):
     def get(self, channel_name):
-        self.response.headers['Content-Type'] = 'text/plain'
-        #self.response.write('Hello, World! %r\n' % (channel_name,))
-
-        token = channel.create_channel(channel_name)
-        self.response.write('%s\n' % (token,))
+        self.response.headers['Content-Type'] = 'appplication/binary'
+        self.response.write('%s\n' % (memcache.get(channel_name),))
 
     def post(self, channel_name):
-        channel.send_message(channel_name,)
-
-    def post(self, channel_name):
-        msg = self.request.body
-        if msg is None:
-            self.response.error(400)
-            self.response.out.write('payload data parameter missing')
-        else:
-            msg = json.dumps(msg)
-            try:
-                channel.send_message(channel_name, msg)
-            except Exception, e:
-                self.response.out.write('exception %r\n' % (e,))
-            self.response.out.write('written %r\n' % (msg,))
+        memcache.set(channel_name, self.request.body)
+        self.response.out.write('ok\n')
 
 
 application = webapp2.WSGIApplication([

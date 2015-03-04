@@ -6,6 +6,7 @@ import time
 import thread
 
 last_updated = [0]
+last_data = ''
 
 sfd = serial.Serial("/dev/ttyUSB0", 115200,
                     parity=serial.PARITY_EVEN,
@@ -14,19 +15,18 @@ sfd = serial.Serial("/dev/ttyUSB0", 115200,
 def main():
     while True:
         data = raw_input()
-        data = data[:180]
-        if len(data) != 180:
-            print >> sys.stderr, "[!] invalid data on stdin"
+        print "[!] got data! len=%d" % (len(data),)
+        if last_data != data:
             continue
-        print "[!] got data!" 
-        sfd.write('\x00\x01\x02' + data)
+        sfd.write('\xff\xff\xff' + data)
         last_updated[0] = time.time()
+        last_data = data
 
 def check_freshness():
     while True:
         if time.time() - last_updated[0] > 60:
             print "[!] stale data. clearing"
-            sfd.write('\x00\x01\x02' + ('\x00\x00\x00' * 60))
+            sfd.write('\xff\xff\xff' + ('\x00\x00\x00' * 90))
         time.sleep(20)
 
 if __name__ == '__main__':
