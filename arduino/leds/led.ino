@@ -1,5 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 
+// 5 for lilly
 #define PIN 2
 #define PIXELS 256
 
@@ -21,7 +22,12 @@ static void refresh_led() {
 
 
 void setup() {
-	memset(buf, 1, sizeof(buf));
+     int i;
+     for (i = 0; i < PIXELS; i++) {
+         buf[i*3+0]= 0;
+         buf[i*3+1]= 0;
+         buf[i*3+2]= 1;
+}
 
 	pinMode(PIN, OUTPUT);
 	strip.begin();
@@ -46,9 +52,7 @@ void loop() {
 		return;
 
 	count += 1;
-	digitalWrite(13, count % 2 == 0 ? HIGH : LOW);
-
-
+        digitalWrite(13, count % 2 == 0 ? HIGH : LOW);
 
 	unsigned i;
 	for (i=0; i < sizeof(buf); i++) {
@@ -63,4 +67,3 @@ void loop() {
 
 	refresh_led();
 }
-
