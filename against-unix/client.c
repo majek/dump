@@ -17,7 +17,7 @@
 uint64_t realtime_now()
 {
         struct timespec now_ts;
-        clock_gettime(CLOCK_MONOTONIC, &now_ts);
+        clock_gettime(CLOCK_REALTIME, &now_ts);
         return TIMESPEC_NSEC(&now_ts);
 }
 
