@@ -65,7 +65,7 @@ raw_items = [
 
 items = [Item(*k) for k in raw_items]
 
-q
+
 def str_time(t):
     if not t: t = 0
     d = t / days

@@ -36,7 +36,7 @@ void thread_loop(void *userdata) {
 		iovec->iov_base = (void*)state->payload;
 		iovec->iov_len = state->payload_sz;
 	}
-
+	
 	while (1) {
 		int r = sendmmsg(fd, messages, state->packets_in_buf, 0);
 		if (r <= 0) {
