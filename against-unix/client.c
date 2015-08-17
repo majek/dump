@@ -12,13 +12,14 @@
 #include <unistd.h>
 #include <time.h>
 
-#define TIMESPEC_NSEC(ts) ((ts)->tv_sec * 1000000000ULL + (ts)->tv_nsec)
+#define TIMEVAL_NSEC(ts)                                                       \
+	((ts)->tv_sec * 1000000000ULL + (ts)->tv_usec * 1000ULL)
 
 uint64_t realtime_now()
 {
-        struct timespec now_ts;
-        clock_gettime(CLOCK_REALTIME, &now_ts);
-        return TIMESPEC_NSEC(&now_ts);
+        struct timeval tv;
+	gettimeofday(&tv, NULL);
+        return TIMEVAL_NSEC(&tv);
 }
 
 int main()
