@@ -49,8 +49,8 @@ int main()
 		uint64_t t0 = realtime_now();
 		char buf[1024];
 		send(sd, buf, sizeof(buf), 0);
-		uint64_t td = realtime_now()- t0;
 		recv(sd, buf, sizeof(buf), 0);
+		uint64_t td = realtime_now()- t0;
 		if (best_td > td)
 			best_td = td;
 	}
