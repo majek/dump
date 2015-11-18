@@ -1,0 +1,29 @@
+/*
+
+Based on Brendan Gregg's work: http://www.brendangregg.com/FlameGraphs/cpuflamegraphs.html
+
+*/
+global s%
+
+# Two ways of getting the timer - either perf.hw.instructions
+# (every 100m instructions), or timer.profile - every jiffie tick.
+
+// probe perf.hw.instructions {
+probe timer.profile {
+        s[backtrace()] <<< 1;
+}
+
+probe end {
+        foreach (i in s+) {
+                print_stack(i);
+                printf("\t%d\n", @count(s[i]));
+        }
+}
+
+%( $# > 1 %?
+probe timer.sec($2) {
+   %:
+probe timer.sec(30) {
+   %)
+        exit();
+}
