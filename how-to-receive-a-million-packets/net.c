@@ -147,7 +147,7 @@ int net_bind_udp(struct net_addr *shost, int reuseport)
 
 	if (reuseport) {
 		one = 1;
-		setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, (char*)&one, sizeof(one));
+		r = setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, (char*)&one, sizeof(one));
 		if (r < 0) {
 			PFATAL("setsockopt(SO_REUSEPORT)");
 		}
