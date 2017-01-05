@@ -44,6 +44,8 @@ cpu=0
 softnet_stats_header
 while read total dropped squeezed j1 j2 j3 j4 j5 collision rps flow_limit_count
 do
-	softnet_stats_format $((cpu++)) "$total" "$dropped" "$squeezed" "$collision" "$rps" "$flow_limit_count"
+	# the last field does not appear on older kernels
+	# https://github.com/torvalds/linux/commit/99bbc70741903c063b3ccad90a3e06fc55df9245#diff-5dd540e75b320a50866267e9c52b3289R165
+	softnet_stats_format $((cpu++)) "$total" "$dropped" "$squeezed" "$collision" "$rps" "${flow_limit_count:-0}"
 done < /proc/net/softnet_stat
 
