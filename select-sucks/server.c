@@ -32,8 +32,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	fprintf(stderr, "forks = %d, dupes per fork = %d, total = %d\n",
-	       forks, fd_max, forks*fd_max);
+	int dup_pipe = 0;
+	if (argc > 3) {
+		dup_pipe = 1;
+	}
+
+	fprintf(stderr, "forks = %d, dupes per fork = %d, total = %d, dup_pipe=%d\n",
+		forks, fd_max, forks*fd_max, dup_pipe);
 	int *list_of_sd = calloc(1, sizeof(int) * fd_max);
 	int *list_of_pids = calloc(1, sizeof(int) * fd_max);
 
@@ -89,7 +94,11 @@ int main(int argc, char **argv)
 	}
 
 	for (i = 1; i < fd_max; i++) {
-		list_of_sd[i] = dup(pipefd[0]);
+		if (dup_pipe){
+			list_of_sd[i] = dup(pipefd[0]);
+		} else {
+			list_of_sd[i] = dup(list_of_sd[0]);
+		}
 	}
 
 	while (1) {
