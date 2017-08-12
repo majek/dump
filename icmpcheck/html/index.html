@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>ICMP blackhole check</title>
+
+<link href="bootstrap.min.css" rel="stylesheet">
+
+<link href="ie10-viewport-bug-workaround.css" rel="stylesheet">
+
+<link href="sticky-footer.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="container">
+<div class="page-header">
+<h1>ICMP blackhole check</h1>
+</div>
+
+<h3>ICMP path mtu packet delivery</h3>
+<p class="leadicmp lead">Please enable javscript for this test to work...</p>
+<p>In this test your browser uploads a sizeable payload to our server.
+TCP segments originated by you are going to be dropped. An ICMP
+message will be generated asking you to reduce the MTU to a laughingly
+small value.</p>
+<p>A failure of this test indicates:</p>
+<ol>
+<li>You are most likely an <a href="https://en.wikipedia.org/wiki/Path_MTU_Discovery#Problems">ICMP PMTU blackhole</a>.
+<li>Your TCP connections will occasionally time out for no apparent reason.
+</ol>
+<script>
+    document.getElementsByClassName("leadicmp")[0].innerHTML = "Testing your network now..."
+    var reqicmp = new XMLHttpRequest();
+    reqicmp.open('POST', '/icmp', true);
+
+    reqicmp.timeout = 6000; // ms
+    reqicmp.ontimeout = function () {
+         document.getElementsByClassName("leadicmp")[0].innerHTML = ":( The request timed out. Looks like the ICMP Path MTU message was not delivered to you."
+    }
+
+    reqicmp.onload = function() {
+      if (reqicmp.status >= 200 && reqicmp.status < 400) {
+        try {
+          var data = JSON.parse(reqicmp.responseText);
+        } catch(e){
+           document.getElementsByClassName("leadicmp")[0].innerHTML = ":( Something got messed up in transmission. This is a bad sign."
+           return
+        }
+        document.getElementsByClassName("leadicmp")[0].innerHTML = "All good! ICMP path MTU message was successfully delivered to you."
+      } else {
+        // We reached our target server, but it returned an error
+        document.getElementsByClassName("leadicmp")[0].innerHTML = "Test failed!"
+      }
+    };
+
+    reqicmp.onerror = function() {
+        document.getElementsByClassName("lead")[0].innerHTML = ":( Looks like your network or firewall blocks IP fragments. This is pretty bad and might be the cause of DNS resolution issues."
+    };
+
+    // this string is toxic. Inbound with this will be -j DROPped!
+    var s = 'packettoolongyaithuji6reeNab4XahChaeRah1diej4';
+    while (s.length < 16384) {
+         s = s + s
+    }
+
+    setTimeout(function(){
+        reqicmp.send(s);
+    }, 2000);
+
+    </script>
+
+Run this test from your server:
+<pre>
+perl -e "print ('packettoolongyaithuji6reeNab4XahChaeRah1diej4 x 180)" > payload.bin
+curl  -v --silent -X POST http://icmpcheck.popcount.org/icmp --data @payload.bin
+
+ip route get 139.162.188.91
+sudo ip route flush cache to 139.162.188.91
+
+# or
+
+ip -6 route get 2a01:7e01::f03c:91ff:fe16:a2e9
+ip -6 route flush 2a01:7e01::f03c:91ff:fe16:a2e9 cache
+</pre>
+
+
+<h3>IP fragmented packet delivery</h3>
+<p class="leadfrag lead">Please enable javscript for this test to work...</p>
+<p>In this test we deliver a large payload from the server, to your
+browser. Multiple of the TCP segments are going to be fragmented on IP
+layer.</p>
+<p>A failure of this test means:</p>
+<ol>
+<li>Certain DNS queries may time out.
+<li>Some UDP based protocols (like games, NTP) might occasionally fail.
+</ol>
+
+Run this test from your server:
+<pre>
+curl -v --silent http://icmpcheck.popcount.org/frag -o /dev/null
+</pre>
+
+<script>
+    document.getElementsByClassName("leadfrag")[0].innerHTML = "Testing your network now..."
+    var reqfrag = new XMLHttpRequest();
+    reqfrag.open('GET', '/frag', true);
+
+    reqfrag.timeout = 6000; // ms
+    reqfrag.ontimeout = function () {
+         document.getElementsByClassName("leadfrag")[0].innerHTML = ":( The request timed out. Looks like IP fragments were not delivered to you."
+    }
+
+    reqfrag.onload = function() {
+      if (reqfrag.status >= 200 && reqfrag.status < 400) {
+        try {
+           var data = JSON.parse(reqfrag.responseText);
+        } catch(e){
+           document.getElementsByClassName("leadfrag")[0].innerHTML = ":( Something got seriously messed up in transmission. This is a bad sign."
+           return
+        }
+        document.getElementsByClassName("leadfrag")[0].innerHTML = "All good! IP fragments were successfully delivered to your host."
+      } else {
+        // We reached our target server, but it returned an error
+        document.getElementsByClassName("leadfrag")[0].innerHTML = "Test failed!"
+      }
+    };
+
+    reqfrag.onerror = function() {
+        document.getElementsByClassName("leadfrag")[0].innerHTML = ":( Looks like your network or firewall blocks inbound IP fragments. This is bad."
+    };
+
+
+    setTimeout(function(){
+        reqfrag.send();
+    }, 4000);
+
+</script>
+
+
+</div>
+
+<footer class="footer">
+<div class="container">
+<p class="text-muted"></p>
+</div>
+
+</footer>
+
+<script src="ie10-viewport-bug-workaround.js"></script>
+</body>
+</html>
+
