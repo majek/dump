@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/Alkorin/nflog"
 	"os"
-	"fmt"
 )
 
 func NewNflog(l int) chan *nflog.Msg {

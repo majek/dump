@@ -5,21 +5,41 @@ import (
 	"syscall"
 )
 
-var global_ch  chan []byte
+var global_ch chan *Packet
+var global_v4mtu, global_v6mtu int
 
 func real_callback(payload *nfqueue.Payload) int {
 	data := make([]byte, len(payload.Data))
 	copy(data, payload.Data)
-	payload.SetVerdict(nfqueue.NF_DROP)
-	global_ch  <- data
+
+	p := &Packet{}
+	p.Parse(data, false)
+	if p.Tcp.Parsed != true {
+		payload.SetVerdict(nfqueue.NF_ACCEPT)
+	} else {
+		if p.Tcp.DstPort < 1024 || p.Tcp.DstPort == 8080 || p.Tcp.DstPort == 8000 {
+			if (p.IP.Ipver == 4 && int(p.IP.TotalLength) <= global_v4mtu) || (p.IP.Ipver == 6 && int(p.IP.TotalLength) <= global_v6mtu) {
+				payload.SetVerdict(nfqueue.NF_ACCEPT)
+			} else {
+				p.doIcmp = true
+				payload.SetVerdict(nfqueue.NF_DROP)
+				global_ch <- p
+			}
+		} else {
+			payload.SetVerdict(nfqueue.NF_DROP)
+			global_ch <- p
+		}
+	}
 	return 0
 }
 
-func NFQueue(queueNo int) chan []byte{
+func NFQueue(queueNo int, v4mtu, v6mtu int) chan *Packet {
 	q := new(nfqueue.Queue)
 
-	ch := make(chan []byte, 32)
+	ch := make(chan *Packet, 32)
 	global_ch = ch
+	global_v4mtu = v4mtu
+	global_v6mtu = v6mtu
 
 	q.SetCallback(real_callback)
 
@@ -31,7 +51,7 @@ func NFQueue(queueNo int) chan []byte{
 	q.Bind(syscall.AF_INET6)
 
 	q.CreateQueue(queueNo)
-	go func (){
+	go func() {
 		q.Loop()
 		q.DestroyQueue()
 		q.Close()

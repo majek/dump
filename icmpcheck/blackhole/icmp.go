@@ -1,20 +1,20 @@
 package main
+
 import (
-	"syscall"
 	"fmt"
 	"os"
+	"syscall"
 )
 
 type icmpSender struct {
-	icmpFd int
+	icmpFd   int
 	icmpv6Fd int
-	mtu int
+	v4mtu    int
+	v6mtu    int
 }
 
-func NewIcmpSender(mtu int) *icmpSender{
+func NewIcmpSender(v4mtu, v6mtu int) *icmpSender {
 	is := &icmpSender{}
-	is.mtu = mtu
-
 
 	icmpFd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_ICMP)
 	if err != nil {
@@ -36,20 +36,22 @@ func NewIcmpSender(mtu int) *icmpSender{
 
 	is.icmpFd = icmpFd
 	is.icmpv6Fd = icmpv6Fd
+	is.v4mtu = v4mtu
+	is.v6mtu = v6mtu
 	return is
 }
 
-func (is *icmpSender)replyIcmp(p *Packet) {
-	mtu := is.mtu
+func (is *icmpSender) replyIcmp(p *Packet) {
 	var icmpData []byte
 
 	truncData := p.L3Data
-	if len(truncData) > 64 {
-		truncData = truncData[:64]
+	if len(truncData) > 128 {
+		truncData = truncData[:128]
 	}
 
 	if p.IP.Ipver == 4 {
-		icmpData = []byte {
+		mtu := is.v4mtu
+		icmpData = []byte{
 			3, 4, 0, 0,
 			byte((mtu >> 24) & 0xFF), byte((mtu >> 16) & 0xFF), byte((mtu >> 8) & 0xFF), byte((mtu >> 0) & 0xFF),
 		}
@@ -58,7 +60,7 @@ func (is *icmpSender)replyIcmp(p *Packet) {
 		icmpData[2] = uint8(cs >> 8)
 		icmpData[3] = uint8(cs)
 
-		var r [4] byte
+		var r [4]byte
 		copy(r[:], p.IP.SrcIP.To4())
 		addr := syscall.SockaddrInet4{
 			Port: 0,
@@ -72,8 +74,8 @@ func (is *icmpSender)replyIcmp(p *Packet) {
 	}
 
 	if p.IP.Ipver == 6 {
-		mtu = 1285
-		icmpData = []byte {
+		mtu := is.v6mtu
+		icmpData = []byte{
 			2, 0, 0, 0,
 			byte((mtu >> 24) & 0xFF), byte((mtu >> 16) & 0xFF), byte((mtu >> 8) & 0xFF), byte((mtu >> 0) & 0xFF),
 		}
@@ -81,7 +83,7 @@ func (is *icmpSender)replyIcmp(p *Packet) {
 
 		// TODO: Leaving checksum to zero is almost certainly not going to work. IPv6 wonders!
 
-		var r [16] byte
+		var r [16]byte
 		copy(r[:], p.IP.SrcIP.To16())
 		addr := syscall.SockaddrInet6{
 			Port: 0,

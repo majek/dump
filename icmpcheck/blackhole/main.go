@@ -1,49 +1,55 @@
 package main
 
-import(
+import (
 	"fmt"
-	"os"
-	"net/http"
-	"time"
-	"strings"
 	"io"
-	"syscall"
 	"net"
+	"net/http"
+	"os"
+	"strings"
+	"syscall"
+	"time"
 )
 
 func main() {
-	fmt.Fprintf(os.Stderr, "[ ] Remember to add\n")
-	fmt.Fprintf(os.Stderr, "iptables -A INPUT -m string --algo bm --string packettoolongyaithuji6reeNab4XahChaeRah1diej4 -m length --length 901:65535 -j NFQUEUE --queue-num 34\n")
-	fmt.Fprintf(os.Stderr, "iptables -A OUTPUT -m mark --mark 34 -j NFQUEUE --queue-num 34\n")
-	fmt.Fprintf(os.Stderr, "iptables -t raw -A OUTPUT -m mark --mark 33 -j NOTRACK\n")
+	v4mtu := 905
+	v6mtu := 1285
+	fmt.Fprintf(os.Stderr, `[ ] Remember to add
+iptables -A INPUT -m string --algo bm --string packettoolongyaithuji6reeNab4XahChaeRah1diej4 -m length --length %d:65535 -j NFQUEUE --queue-num 34
+iptables -A OUTPUT -m mark --mark 34 -j NFQUEUE --queue-num 34
+iptables -t raw -A OUTPUT -m mark --mark 33 -j NOTRACK
+iptables -t raw -I PREROUTING -p tcp --dport 80 -j NOTRACK
 
-	fmt.Fprintf(os.Stderr, "ip6tables -A INPUT -m string --algo bm --string packettoolongyaithuji6reeNab4XahChaeRah1diej4 -m length --length 1286:65535 -j NFQUEUE --queue-num 34\n")
-	fmt.Fprintf(os.Stderr, "ip6tables -A OUTPUT -m mark --mark 34 -j NFQUEUE --queue-num 34\n")
-	fmt.Fprintf(os.Stderr, "ip6tables -t raw -A OUTPUT -m mark --mark 33 -j NOTRACK\n")
-	fmt.Fprintf(os.Stderr,"\n")
+ip6tables -A INPUT -m string --algo bm --string packettoolongyaithuji6reeNab4XahChaeRah1diej4 -m length --length %d:65535 -j NFQUEUE --queue-num 34
+ip6tables -A OUTPUT -m mark --mark 34 -j NFQUEUE --queue-num 34
+ip6tables -t raw -A OUTPUT -m mark --mark 33 -j NOTRACK
+ip6tables -t raw -I PREROUTING -p tcp --dport 80 -j NOTRACK
+`, v4mtu-20+1, v6mtu-40+1)
+	// 886 + 20 bytes of IP header = 906 bytes or longer. We want MTU=905
+	// 1246 + 40 bytes of IPv6 header = 1286 bytes or longer. We want MTU=1285.
 
+	// PREROUTING NOTRACK is needed to make sure inbound
+	// fragmented POST /icmp would not get dropped on the -m
+	// string rule. Yes, I did saw a DF+MF fragmented TCP segments
+	// on inbound.
 
-//	nl := NewNflog(1)
-	nq_frag := NFQueue(34)
+	// OUTPUT NOTRACK is needed to prevent outbound
+	// de-fragmentation. By default iptables conntrack might
+	// re-fragment packets. The IP_NODEFRAG somehow helps, but I
+	// don't know specifically how it interacts with conntrack.
+
+	nq_frag := NFQueue(34, v4mtu, v6mtu)
 	fmt.Fprintf(os.Stderr, "[+] Nfqueue 34 opened\n")
 
-
-	mtu := 900
-	icmpSender := NewIcmpSender(mtu)
-	fragSender := NewFragSender(mtu)
+	icmpSender := NewIcmpSender(v4mtu, v6mtu)
+	fragSender := NewFragSender(512, 512)
 
 	go gohttp()
 
 	for {
-		select  {
-		case m := <- nq_frag:
-			p := &Packet{}
-			p.Parse(m, false)
-			if p.Tcp.Parsed != true {
-				fmt.Printf("not parsed\n")
-				continue
-			}
-			if p.Tcp.DstPort < 1024 || p.Tcp.DstPort == 8080 || p.Tcp.DstPort == 8000 {
+		select {
+		case p := <-nq_frag:
+			if p.doIcmp {
 				icmpSender.replyIcmp(p)
 			} else {
 				fragSender.replyFrag(p)
@@ -56,7 +62,7 @@ var longPayload = strings.Repeat("fragmentmeoopeitii1poth5rah9jooteireZ8eej7", 9
 func frag(w http.ResponseWriter, r *http.Request) {
 	r.Close = true
 
-	io.WriteString(w, "{\"data\":\"")
+	fmt.Fprintf(w, "{\"data\":\"")
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}
@@ -96,14 +102,14 @@ func frag(w http.ResponseWriter, r *http.Request) {
 
 	for i := 0; i < 4; i++ {
 		p := longPayload[:2048]
-		io.WriteString(bufrw, fmt.Sprintf("%x\r\n%s\r\n",len(p), p))
+		fmt.Fprintf(bufrw, "%x\r\n%s\r\n", len(p), p)
 	}
 	bufrw.Flush()
 
 	ti, err := GetTcpinfo(conn)
 	if err == nil {
-		s := fmt.Sprintf("\", \"mtu\":%d, \"lost_segs\":%d, \"retrans_segs\":%d, \"total_retrans_segs\":%d, \"reord_segs\":%d, \"snd_mss\":%d, \"rcv_mss\":%d}\n", ti.Sys.PathMTU, ti.Sys.LostSegs, ti.Sys.RetransSegs,ti.Sys.TotalRetransSegs, ti.Sys.ReorderedSegs, ti.SenderMSS, ti.ReceiverMSS)
-		io.WriteString(bufrw, fmt.Sprintf("%x\r\n%s\r\n0\r\n\r\n", len(s), s))
+		s := fmt.Sprintf("\", \"mtu\":%d, \"lost_segs\":%d, \"retrans_segs\":%d, \"total_retrans_segs\":%d, \"reord_segs\":%d, \"snd_mss\":%d, \"rcv_mss\":%d}\n", ti.Sys.PathMTU, ti.Sys.LostSegs, ti.Sys.RetransSegs, ti.Sys.TotalRetransSegs, ti.Sys.ReorderedSegs, ti.SenderMSS, ti.ReceiverMSS)
+		fmt.Fprintf(bufrw, "%x\r\n%s\r\n0\r\n\r\n", len(s), s)
 		bufrw.Flush()
 		fmt.Printf(s)
 	} else {
@@ -115,22 +121,13 @@ func frag(w http.ResponseWriter, r *http.Request) {
 
 func icmp(w http.ResponseWriter, r *http.Request) {
 	r.Close = true
-	data := []byte{}
-	for len(data) < 32768 {
-		var buf = [4096]byte{}
-		n, err := r.Body.Read(buf[:])
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Printf("%q\n", err)
-			break
-		} else {
-			data = append(data, buf[:n]...)
-		}
+	data := make([]byte, 32768)
+	_, err := io.ReadFull(r.Body, data)
+	if err != nil && err != io.EOF {
+		// fmt.Fprintf(os.Stderr, "read() %q\n", err);
 	}
-	time.Sleep(250*time.Millisecond)
-	io.WriteString(w, "{\"msg1\": \"Upload complete\"")
+	time.Sleep(250 * time.Millisecond)
+	fmt.Fprintf(w, "{\"msg1\": \"Upload complete\"")
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}
@@ -149,16 +146,16 @@ func icmp(w http.ResponseWriter, r *http.Request) {
 
 	ti, err := GetTcpinfo(conn)
 	if err == nil {
-		s := fmt.Sprintf(", \"mtu\":%d, \"lost_segs\":%d, \"retrans_segs\":%d, \"total_retrans_segs\":%d, \"reord_segs\":%d, \"snd_mss\":%d, \"rcv_mss\":%d}\n", ti.Sys.PathMTU, ti.Sys.LostSegs, ti.Sys.RetransSegs,ti.Sys.TotalRetransSegs, ti.Sys.ReorderedSegs, ti.SenderMSS, ti.ReceiverMSS)
-		io.WriteString(bufrw, fmt.Sprintf("%x\r\n%s\r\n0\r\n\r\n", len(s), s))
+		s := fmt.Sprintf(", \"mtu\":%d, \"lost_segs\":%d, \"retrans_segs\":%d, \"total_retrans_segs\":%d, \"reord_segs\":%d, \"snd_mss\":%d, \"rcv_mss\":%d}\n", ti.Sys.PathMTU, ti.Sys.LostSegs, ti.Sys.RetransSegs, ti.Sys.TotalRetransSegs, ti.Sys.ReorderedSegs, ti.SenderMSS, ti.ReceiverMSS)
+		fmt.Fprintf(bufrw, "%x\r\n%s\r\n0\r\n\r\n", len(s), s)
 		bufrw.Flush()
 		fmt.Printf(s)
 	}
 	conn.Close()
 }
 
-func serveStatic (w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "html/" + r.URL.Path[1:])
+func serveStatic(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "html/"+r.URL.Path[1:])
 }
 
 func gohttp() {
@@ -177,4 +174,3 @@ func gohttp() {
 
 	s.ListenAndServe()
 }
-

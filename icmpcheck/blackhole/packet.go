@@ -35,6 +35,7 @@ func Bswapuint16(a uint16) uint16 {
 }
 
 type Packet struct {
+	doIcmp          bool
 	AgentAddress    net.IP
 	InputIfaceValue uint32
 	SrcAS           uint32
@@ -75,7 +76,7 @@ type Packet struct {
 	}
 
 	L4Data []byte
-	Tcp struct {
+	Tcp    struct {
 		Parsed           bool
 		SrcPort, DstPort uint16
 		Seq, Ack         uint32
