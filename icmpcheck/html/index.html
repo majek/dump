@@ -38,7 +38,7 @@ laughingly small value..</p>
 
     reqicmp.timeout = 8000; // ms
     reqicmp.ontimeout = function () {
-         document.getElementsByClassName("leadicmp")[0].innerHTML = "<b style=color:red>&#x2717;</b> The request timed out. Looks like the ICMP Path MTU message was not delivered to you."
+         document.getElementsByClassName("leadicmp")[0].innerHTML = "<div class=bg-danger><b style=color:red>&#x2717;</b> The request timed out. Looks like the ICMP Path MTU message was not delivered to you."
     }
 
     reqicmp.onload = function() {
@@ -46,18 +46,18 @@ laughingly small value..</p>
         try {
           var data = JSON.parse(reqicmp.responseText);
         } catch(e){
-           document.getElementsByClassName("leadicmp")[0].innerHTML = "<b style=color:red>&#x2717;</b> Something got messed up in transmission. This is a bad sign."
+           document.getElementsByClassName("leadicmp")[0].innerHTML = "<div class=bg-danger><b style=color:red>&#x2717;</b> Something got messed up in transmission. This is a bad sign."
            return
         }
-        document.getElementsByClassName("leadicmp")[0].innerHTML = "<b style=color:green>&#x2713;</b> All good! ICMP path MTU message was successfully delivered to you."
+        document.getElementsByClassName("leadicmp")[0].innerHTML = "<div class=bg-success><b style=color:green>&#x2713;</b> All good! ICMP path MTU message was successfully delivered to you."
       } else {
         // We reached our target server, but it returned an error
-        document.getElementsByClassName("leadicmp")[0].innerHTML = "<b style=color:red>&#x2717;</b>Test failed!"
+        document.getElementsByClassName("leadicmp")[0].innerHTML = "<div class=bg-danger><b style=color:red>&#x2717;</b> Test failed!"
       }
     };
 
     reqicmp.onerror = function() {
-        document.getElementsByClassName("lead")[0].innerHTML = "<b style=color:red>&#x2717;</b> Looks like your network or firewall blocks IP fragments. This is pretty bad and might be the cause of DNS resolution issues."
+        document.getElementsByClassName("lead")[0].innerHTML = "<div class=bg-danger><b style=color:red>&#x2717;</b> Test failed!"
     };
 
     // this string is toxic. Inbound with this will be -j DROPped!
@@ -130,7 +130,7 @@ IP6 server > client: frag (1024|221)
 
     reqfrag.timeout = 8000; // ms
     reqfrag.ontimeout = function () {
-         document.getElementsByClassName("leadfrag")[0].innerHTML = "<b style=color:red>&#x2717;</b> The request timed out. Looks like IP fragments were not delivered to you."
+         document.getElementsByClassName("leadfrag")[0].innerHTML = "<div class=bg-danger><b style=color:red>&#x2717;</b> The request timed out. Looks like IP fragments failed to be delivered to you."
     }
 
     reqfrag.onload = function() {
@@ -138,18 +138,18 @@ IP6 server > client: frag (1024|221)
         try {
            var data = JSON.parse(reqfrag.responseText);
         } catch(e){
-           document.getElementsByClassName("leadfrag")[0].innerHTML = "<b style=color:red>&#x2717;</b> Something got seriously messed up in transmission. This is a bad sign."
+           document.getElementsByClassName("leadfrag")[0].innerHTML = "<div class=bg-danger><b style=color:red>&#x2717;</b> Something got seriously messed up in transmission. This is a bad sign."
            return
         }
-        document.getElementsByClassName("leadfrag")[0].innerHTML = "<b style=color:green>&#x2713;</b> All good! IP fragments were successfully delivered to your host."
+        document.getElementsByClassName("leadfrag")[0].innerHTML = "<div class=bg-success><b style=color:green>&#x2713;</b> All good! IP fragments were successfully delivered to your host."
       } else {
         // We reached our target server, but it returned an error
-        document.getElementsByClassName("leadfrag")[0].innerHTML = "<b style=color:red>&#x2717;</b> Test failed!"
+        document.getElementsByClassName("leadfrag")[0].innerHTML = "<div class=bg-danger><b style=color:red>&#x2717;</b> Test failed!"
       }
     };
 
     reqfrag.onerror = function() {
-       document.getElementsByClassName("leadfrag")[0].innerHTML = "<b style=color:red>&#x2717;</b> Looks like your network or firewall blocks inbound IP fragments. This is bad."
+       document.getElementsByClassName("leadfrag")[0].innerHTML = "<div class=bg-danger><b style=color:red>&#x2717;</b> Test failed!"
     };
 
 
