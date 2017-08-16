@@ -20,16 +20,18 @@
 <h1>ICMP blackhole check</h1>
 </div>
 
-<h3>ICMP path mtu packet delivery</h3>
+<h3>ICMP path MTU packet delivery</h3>
 <p class="leadicmp lead">Please enable javscript for this test to work...</p>
-<p>In this test your browser uploads a sizeable payload to our server.
-TCP segments originated by you are going to be dropped. Our server
+<p>In this test your browser uploads a sizeable payload to our server, while
+your long TCP segments are being dropped. Our server
 will generate an ICMP message asking you to reduce the MTU to a
-laughingly small value..</p>
-<p>A failure of this test indicates:</p>
+laughingly small value.</p>
+
+<p>ICMP is critical to a well functioning Internet connections, yet networks are often misconfigured. Broken ICMP (being an <a href="https://en.wikipedia.org/wiki/Path_MTU_Discovery#Problems">ICMP blackhole</a>) can lead to serious issues:</p>
 <ol>
-<li>You are most likely an <a href="https://en.wikipedia.org/wiki/Path_MTU_Discovery#Problems">ICMP PMTU blackhole</a>.
-<li>Your TCP connections will occasionally time out for no apparent reason.
+<li>Slow DNS lookups.
+<li>Glitches and lag when playing games using UDP.
+<li>TCP connections failing occasionally for no apparent reason.
 </ol>
 <script>
     document.getElementsByClassName("leadicmp")[0].innerHTML = "Testing your network now..."
@@ -76,7 +78,7 @@ Run this test from your server:
 
 <pre>
 perl -e "print 'packettoolongyaithuji6reeNab4XahChaeRah1diej4' x 180" > payload.bin
-curl  -v --silent -X POST http://icmpcheck.popcount.org/icmp --data @payload.bin
+curl  -v -s http://icmpcheck.popcount.org/icmp --data @payload.bin
 </pre>
 You should see ICMP or ICMPv6 packet-too-big messages from the server:
 <pre>
@@ -97,17 +99,18 @@ ip -6 route flush `dig +short AAAA icmpcheckv6.popcount.org` cache
 
 <h3>IP fragmented packet delivery</h3>
 <p class="leadfrag lead">Please enable javscript for this test to work...</p>
-<p>In this test we deliver a large payload from the server, to your
+<p>In this test we send a large payload from the server, to your
 browser. Each TCP segment sent by the server will be fragmented into multiple IP packets.</p>
 <p>A failure of this test means:</p>
 <ol>
-<li>Certain DNS queries may time out.
 <li>Some UDP based protocols (like games, NTP) might occasionally fail.
+<li>Certain DNS queries may time out, slowing down your internet experience.
+<li>Your ISP, firewall or <a href="https://en.wikipedia.org/wiki/Customer-premises_equipment">CPE</a> is not supporting basic Internet Protocol features.
 </ol>
 
 Run this test from your server:
 <pre>
-curl -v --silent http://icmpcheck.popcount.org/frag -o /dev/null
+curl -v -s http://icmpcheck.popcount.org/frag -o /dev/null
 </pre>
 
 You should see fragmented IP packets:

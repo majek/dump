@@ -154,6 +154,45 @@ func icmp(w http.ResponseWriter, r *http.Request) {
 	conn.Close()
 }
 
+var mtuLongPayload = strings.Repeat("x", 4096)
+
+func mtupage(w http.ResponseWriter, r *http.Request) {
+	r.Close = true
+	fmt.Fprintf(w, "{\"msg1\": \"")
+	data := make([]byte, 32768)
+	_, err := io.ReadFull(r.Body, data)
+	if err != nil && err != io.EOF {
+		// fmt.Fprintf(os.Stderr, "read() %q\n", err);
+	}
+	time.Sleep(250 * time.Millisecond)
+
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		return
+	}
+
+	conn, bufrw, err := hj.Hijack()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(bufrw, "%x\r\n%s\r\n", len(mtuLongPayload), mtuLongPayload)
+	bufrw.Flush()
+
+	ti, err := GetTcpinfo(conn)
+	if err == nil {
+		s := fmt.Sprintf("\", \"mtu\":%d, \"lost_segs\":%d, \"retrans_segs\":%d, \"total_retrans_segs\":%d, \"reord_segs\":%d, \"snd_mss\":%d, \"rcv_mss\":%d}\n", ti.Sys.PathMTU, ti.Sys.LostSegs, ti.Sys.RetransSegs, ti.Sys.TotalRetransSegs, ti.Sys.ReorderedSegs, ti.SenderMSS, ti.ReceiverMSS)
+		fmt.Fprintf(bufrw, "%x\r\n%s\r\n0\r\n\r\n", len(s), s)
+		bufrw.Flush()
+		fmt.Printf(s)
+	}
+	conn.Close()
+}
+
 func serveStatic(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "html/"+r.URL.Path[1:])
 }
@@ -163,6 +202,7 @@ func gohttp() {
 	s.SetKeepAlivesEnabled(false)
 
 	http.HandleFunc("/frag", frag)
+	http.HandleFunc("/mtu", mtupage)
 	http.HandleFunc("/icmp", icmp)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "html/index.html")
