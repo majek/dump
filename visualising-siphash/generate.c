@@ -58,37 +58,81 @@ static void fill_random(void *buf, unsigned buf_sz) {
 
 
 
-static void sipround(uint64_t v[4]) {
-	SINGLE_ROUND(v[0],v[1],v[2],v[3]);
-//	DOUBLE_ROUND(v[0],v[1],v[2],v[3]);
+/* static void sipround(uint64_t v[4]) { */
+/* 	DOUBLE_ROUND(v[0],v[1],v[2],v[3]); */
+/* 	v[0] ^= b; v[2] ^= 0xff; */
+/* 	DOUBLE_ROUND(v[0],v[1],v[2],v[3]); */
+/* 	DOUBLE_ROUND(v[0],v[1],v[2],v[3]); */
+
+/* //	SINGLE_ROUND(v[0],v[1],v[2],v[3]); */
+/* //	DOUBLE_ROUND(v[0],v[1],v[2],v[3]); */
+/* } */
+
+void siphash24(uint64_t *v) {
+	uint64_t k0 = v[0];
+	uint64_t k1 = v[1];
+	uint64_t s = v[2];
+
+
+	uint64_t len = 7;
+	//s =  0;
+	// len = 0
+	uint64_t b = len << 56;
+	b |= s & 0x00ffffffffffffffULL;
+
+
+	uint64_t v0 = k0 ^ 0x736f6d6570736575ULL;
+	uint64_t v1 = k1 ^ 0x646f72616e646f6dULL;
+	uint64_t v2 = k0 ^ 0x6c7967656e657261ULL;
+	uint64_t v3 = k1 ^ 0x7465646279746573ULL;
+
+	v3 ^= b;
+	DOUBLE_ROUND(v0,v1,v2,v3);
+	v0 ^= b; v2 ^= 0xff;
+	DOUBLE_ROUND(v0,v1,v2,v3);
+//	DOUBLE_ROUND(v0,v1,v2,v3);
+	SINGLE_ROUND(v0,v1,v2,v3);
+
+	v[0] = v0;
+	v[1] = v1;
+	v[2] = v2;
+	v[3] = v3;
 }
 
 
 int main() {
-	const int rounds = 200000;
+	const int rounds = 1000000000;
 
 	int bit;
 	for (bit = 0; bit < 256; bit++) {
-		uint64_t bitmask = 1ULL << (bit & 63);
-
 		uint64_t c[256] = {0};
-		int r;
-		for (r = 0; r < rounds; r++) {
-			uint64_t a[4], b[4], diff[4];
-			fill_random(a, sizeof(a));
-			memcpy(b, a, sizeof(b));
 
-			a[bit / 64] |= bitmask;
-			b[bit / 64] &= ~bitmask;
-			sipround(a);
-			sipround(b);
+		if (bit >= 192-8) {
+			unsigned i;
+			for (i=0; i < 256; i++)
+				c[i] = rounds / 2;
+		} else {
+			uint64_t bitmask = 1ULL << (bit & 63);
 
-			unsigned i, j;
-			for (i=0; i < 4; i++)
-				diff[i] = a[i]^b[i];
-			for (i=0; i < 64; i++)
-				for (j=0; j < 4; j++)
-					c[j*64+i] += !!(diff[j] & (1ULL << i));
+			int r;
+			for (r = 0; r < rounds; r++) {
+				uint64_t a[4], b[4], diff[4];
+				fill_random(a, sizeof(a));
+				memcpy(b, a, sizeof(b));
+
+				a[bit / 64] |= bitmask;
+				b[bit / 64] &= ~bitmask;
+
+				siphash24(a);
+				siphash24(b);
+
+				unsigned i, j;
+				for (i=0; i < 4; i++)
+					diff[i] = a[i]^b[i];
+				for (i=0; i < 64; i++)
+					for (j=0; j < 4; j++)
+						c[j*64+i] += !!(diff[j] & (1ULL << i));
+			}
 		}
 
 		unsigned i;

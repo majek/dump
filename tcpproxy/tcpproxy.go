@@ -46,6 +46,13 @@ func proxyTcp(conn *net.TCPConn, oAddr *net.TCPAddr) {
 		return
 	}
 
+	// Nagle is disabled by default in Golang, but better be
+	// explicit.
+	conn.SetNoDealay(true)
+	orig.SetNoDealay(true)
+
+	// SetKeepAlive , SetLinger
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
