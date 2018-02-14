@@ -32,9 +32,7 @@ void net_set_buffer_size(int cd, int max, int send)
 		flag = SO_RCVBUF;
 	}
 
-	int size = 0;
-
-	for (i = 0; i < 10 && size; i++) {
+	for (i = 0; i < 10; i++) {
 		int bef;
 		socklen_t size = sizeof(bef);
 		if (getsockopt(cd, SOL_SOCKET, flag, &bef, &size) < 0) {
