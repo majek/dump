@@ -10,7 +10,14 @@ import (
 const (
 	SO_ATTACH_BPF = 50
 	SO_DETACH_BPF = 27
+	ETH_P_IPV6    = uint16(0x86DD)
 )
+
+func htons(a uint16) uint16 {
+	p0 := a & 0xFF
+	p1 := (a >> 8) & 0xFF
+	return (p0 << 8) | p1
+}
 
 var (
 	byteOrder = binary.LittleEndian
@@ -69,9 +76,23 @@ func AttachTTLBPF(sockFd int) (int, int, error) {
 
 	ebpfInss := ebpf.Instructions{
 		// r1 has ctx
+		// r0 = ctx[16] (aka protocol)
+		ebpf.BPFIDstOffSrc(ebpf.LdXW, ebpf.Reg0, ebpf.Reg1, 16),
+
+		// Perhaps ipv6
+		ebpf.BPFIDstOffImm(ebpf.JEqImm, ebpf.Reg0, 3, int32(htons(ETH_P_IPV6))),
+
+		// otherwise assume ipv4
+		// 8th byte in IPv4 is TTL
 		// LDABS requires ctx in R6
 		ebpf.BPFIDstSrc(ebpf.MovSrc, ebpf.Reg6, ebpf.Reg1),
 		ebpf.BPFIImm(ebpf.LdAbsB, int32(-0x100000+8)),
+		ebpf.BPFIDstOff(ebpf.Ja, ebpf.Reg0, 2),
+
+		// 7th byte in IPv6 is Hop count
+		// LDABS requires ctx in R6
+		ebpf.BPFIDstSrc(ebpf.MovSrc, ebpf.Reg6, ebpf.Reg1),
+		ebpf.BPFIImm(ebpf.LdAbsB, int32(-0x100000+7)),
 
 		// stash the load result into FP[-4]
 		ebpf.BPFIDstOffSrc(ebpf.StXW, ebpf.RegFP, ebpf.Reg0, -4),
@@ -126,13 +147,10 @@ func AttachTTLBPF(sockFd int) (int, int, error) {
 	return mapFd, bpfFd, nil
 }
 
-func DetachTTLBPF(sockFd, mapFd, bpfFd int) int {
-	if mapFd < 0 || bpfFd < 0 {
+func ReadTTLBPF(mapFd int) int {
+	if mapFd < 0 {
 		return 255
 	}
-	syscall.SetsockoptInt(sockFd, syscall.SOL_SOCKET, SO_DETACH_BPF, bpfFd)
-	syscall.Close(bpfFd)
-
 	bpfMap := ebpf.Map(mapFd)
 
 	var (
@@ -168,7 +186,11 @@ func DetachTTLBPF(sockFd, mapFd, bpfFd int) int {
 		}
 		a = b
 	}
-
-	syscall.Close(mapFd)
 	return minDist
+}
+
+func DetachTTLBPF(sockFd, mapFd, bpfFd int) {
+	syscall.SetsockoptInt(sockFd, syscall.SOL_SOCKET, SO_DETACH_BPF, bpfFd)
+	syscall.Close(bpfFd)
+	syscall.Close(mapFd)
 }

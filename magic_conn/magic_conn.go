@@ -146,7 +146,8 @@ func MagicTCPDialTimeoutTTL(dst *net.TCPAddr, timeout time.Duration) (net.Conn, 
 		syscall.SetsockoptTimeval(fd, syscall.SOL_SOCKET, syscall.SO_SNDTIMEO, &tv)
 	}
 
-	minDist := DetachTTLBPF(fd, mapFd, bpfFd)
+	minDist := ReadTTLBPF(mapFd)
+	DetachTTLBPF(fd, mapFd, bpfFd)
 
 	f := os.NewFile(uintptr(fd), "socket")
 	c, err := net.FileConn(f)
