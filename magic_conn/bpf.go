@@ -5,6 +5,7 @@ import (
 	"github.com/majek/ebpf"
 	"syscall"
 	"time"
+	"fmt"
 )
 
 const (
@@ -129,8 +130,10 @@ func AttachTTLBPF(sockFd int) (int, int, error) {
 		ebpf.BPFIOp(ebpf.Exit),
 	}
 
+
 	bpfProgram, err := ebpf.NewProgram(ebpf.SocketFilter, &ebpfInss, "GPL", 0)
 	if err != nil {
+		fmt.Printf("%s\n", err)
 		// TODO
 		// bpfProgLoadErrorCtr.Inc()
 		bpfMap.Close()
