@@ -43,13 +43,16 @@ ip6tables -t raw -I PREROUTING -p tcp --dport 80 -j NOTRACK
 
 	icmpSender := NewIcmpSender(v4mtu, v6mtu)
 	fragSender := NewFragSender(512, 512)
+	traceSender := NewTraceSender()
 
 	go gohttp()
 
 	for {
 		select {
 		case p := <-nq_frag:
-			if p.doIcmp {
+			if p.doTrace {
+				traceSender.send(p)
+			} else if p.doIcmp {
 				icmpSender.replyIcmp(p)
 			} else {
 				fragSender.replyFrag(p)
@@ -118,6 +121,51 @@ func frag(w http.ResponseWriter, r *http.Request) {
 
 	conn.Close()
 }
+
+var TRACESTRING="tracefragmentmeoopeitii1poth5rah9jooteireZ8eej7"
+func trace(w http.ResponseWriter, r *http.Request) {
+	r.Close = true
+
+	fmt.Fprintf(w, "{\"data\":\"")
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		return
+	}
+
+	conn, bufrw, err := hj.Hijack()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		fmt.Printf("BOOO\n")
+		return
+	}
+
+	tcpConn := conn.(*net.TCPConn)
+	file, _ := tcpConn.File()
+	fd := file.Fd()
+
+	syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_MARK, 34)
+
+	p := TRACESTRING
+	fmt.Fprintf(bufrw, "%x\r\n%s\r\n", len(p), p)
+	bufrw.Flush()
+
+	ti, err := GetTcpinfo(conn)
+	if err == nil {
+		s := fmt.Sprintf("\", \"mtu\":%d, \"lost_segs\":%d, \"retrans_segs\":%d, \"total_retrans_segs\":%d, \"reord_segs\":%d, \"snd_mss\":%d, \"rcv_mss\":%d}\n", ti.Sys.PathMTU, ti.Sys.LostSegs, ti.Sys.RetransSegs, ti.Sys.TotalRetransSegs, ti.Sys.ReorderedSegs, ti.SenderMSS, ti.ReceiverMSS)
+		fmt.Fprintf(bufrw, "%x\r\n%s\r\n0\r\n\r\n", len(s), s)
+		bufrw.Flush()
+		fmt.Printf(s)
+	} else {
+		fmt.Printf("BOOO2 %q %q\n", conn, err)
+	}
+
+	conn.Close()
+}
+
 
 func icmp(w http.ResponseWriter, r *http.Request) {
 	r.Close = true
@@ -204,6 +252,7 @@ func gohttp() {
 	http.HandleFunc("/frag", frag)
 	http.HandleFunc("/mtu", mtupage)
 	http.HandleFunc("/icmp", icmp)
+	http.HandleFunc("/trace", trace)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "html/index.html")
 	})

@@ -36,6 +36,7 @@ func Bswapuint16(a uint16) uint16 {
 
 type Packet struct {
 	doIcmp          bool
+	doTrace bool
 	AgentAddress    net.IP
 	InputIfaceValue uint32
 	SrcAS           uint32

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"syscall"
+	"encoding/hex"
 )
 
 type icmpSender struct {
@@ -48,6 +49,8 @@ func (is *icmpSender) replyIcmp(p *Packet) {
 	if len(truncData) > 128 {
 		truncData = truncData[:128]
 	}
+
+	fmt.Printf("icmp %s\n", hex.EncodeToString(p.L3Data))
 
 	if p.IP.Ipver == 4 {
 		mtu := is.v4mtu

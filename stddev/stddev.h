@@ -54,8 +54,11 @@ static inline void stddev_get(struct stddev *sd, uint64_t *counter_ptr,
 			avg = (double)sd->sum / (double)sd->count;
 		}
 		if (stddev_ptr) {
-			double variance = ((double)sd->sum_sq /
-					   (double)sd->count) - (avg*avg);
+			/*
+			  sum(squared_error) = sum( (x - a)**2 ) = sum( x**2 - 2*a*x + a**2 )
+			  variance = sum(squared_error) / count()
+			*/
+			double variance = ((double)sd->sum_sq - 2.0*avg*sd->sum + (double)avg*avg) / (double)sd->count;
 			dev = sqrt(variance);
 		}
 	}

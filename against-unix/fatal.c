@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 			fd_max = 1;
 		}
 	}
-	printf("forks = %d, open sockets = %d\n", forks, fd_max);
+	printf("forks = %d, dupes per pid = %d\n", forks, fd_max);
 	int *list_of_sd = calloc(1, sizeof(int) * fd_max);
 	int *list_of_pids = calloc(1, sizeof(int) * fd_max);
 
@@ -37,10 +37,10 @@ int main(int argc, char **argv)
 	memset(&sin4, 0, sizeof(sin4));
 	sin4.sin_family = AF_INET;
 	sin4.sin_port = 0;
-//	sin4.sin_addr = INADDR_ANY;
+	inet_pton(AF_INET, "127.0.0.1", &(sin4.sin_addr));
+
 	struct sockaddr *sockaddr = (struct sockaddr*)&sin4;
 	int sockaddr_len = sizeof(sin4);
-
 
 	int i;
 	for (i = 0; i < fd_max; i++) {

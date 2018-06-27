@@ -115,7 +115,7 @@ curl -v -s http://icmpcheck.popcount.org/frag -o /dev/null
 
 You should see fragmented IP packets:
 <pre>
-$ sudo tcpdump -ni any '(ip[6] & (1<<5)) != 0 or (ip[7] != 0) or (ip[6] & ((1<<5)-1) != 0) or ip6[6] == 44
+$ sudo tcpdump -ni any '(ip[6] & (1<<5)) != 0 or (ip[7] != 0) or (ip[6] & ((1<<5)-1) != 0) or ip6[6] == 44'
 IP server.80 > client.36090: Flags [P.], seq ..., length 480: HTTP
 IP server > client: ip-proto-6
 IP server > client: ip-proto-6
