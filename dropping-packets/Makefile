@@ -1,4 +1,4 @@
-all: recv-loop recvmmsg-loop trunc-loop bpf-drop ebpf-drop
+all: recv-loop recvmmsg-loop trunc-loop bpf-drop ebpf-drop busypoll-loop
 
 .PHONY: recv-loop
 recv-loop:
@@ -16,7 +16,10 @@ trunc-loop:
 bpf-drop:
 	gcc -Wall -Wextra -O2 bpf-drop.c -o bpf-drop
 
-
 .PHONY: ebpf-drop
 ebpf-drop:
 	gcc -Wall -Wextra -O2 ebpf-drop.c -o ebpf-drop
+
+.PHONY: busypoll-loop
+busypoll-loop:
+	gcc -Wall -Wextra -O2 busypoll-loop.c -o busypoll-loop
