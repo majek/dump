@@ -1,4 +1,4 @@
-all: recv-loop recvmmsg-loop trunc-loop bpf-drop ebpf-drop busypoll-loop
+all: recv-loop recvmmsg-loop trunc-loop bpf-drop ebpf-drop busypoll-loop xdp-drop-ebpf.o
 
 .PHONY: recv-loop
 recv-loop:
