@@ -14,12 +14,11 @@
 
 #include "net.h"
 
-
 static int net_setup_bpf(int sd)
 {
 	struct sock_filter code[] = {
 		// ret #0
-		{ 0x06,  0,  0, 0x00000000 },
+		{0x06, 0, 0, 0x00000000},
 	};
 
 	struct sock_fprog bpf = {
@@ -31,7 +30,6 @@ static int net_setup_bpf(int sd)
 	if (r < 0) {
 		PFATAL("setsockopt(SO_ATTACH_FILTER)");
 	}
-
 
 	return sd;
 }
@@ -51,8 +49,8 @@ static void timer_handler()
 int main()
 {
 	struct sigaction sa = {0};
-	sa.sa_handler = &timer_handler ;
-	sigaction ( SIGALRM, &sa, NULL );
+	sa.sa_handler = &timer_handler;
+	sigaction(SIGALRM, &sa, NULL);
 
 	struct itimerval timer = {0};
 	timer.it_value.tv_sec = 1;
@@ -67,13 +65,13 @@ int main()
 
 	char buf[MTU_SIZE];
 
-	while(1) {
+	while (1) {
 		int r = read(fd, buf, MTU_SIZE);
 		if (r == 0) {
 			int err = 0;
 			socklen_t err_len = sizeof(err);
 			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
-			if (err == 0){
+			if (err == 0) {
 				packets += 1;
 				continue;
 			}

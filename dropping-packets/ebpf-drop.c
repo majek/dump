@@ -15,31 +15,26 @@
 
 #include "net.h"
 
-static __u64 ptr_to_u64(const void *ptr) {
-        return (__u64) (unsigned long) ptr;
-}
+static __u64 ptr_to_u64(const void *ptr) { return (__u64)(unsigned long)ptr; }
 
-static int bpf(int cmd, union bpf_attr *attr, unsigned int size) {
+static int bpf(int cmd, union bpf_attr *attr, unsigned int size)
+{
 	return syscall(__NR_bpf, cmd, attr, size);
 }
 
+#define BPF_MOV64_IMM(DST, IMM)                                                \
+	((struct bpf_insn){.code = BPF_ALU64 | BPF_MOV | BPF_K,                \
+			   .dst_reg = DST,                                     \
+			   .src_reg = 0,                                       \
+			   .off = 0,                                           \
+			   .imm = IMM})
 
-#define BPF_MOV64_IMM(DST, IMM)					\
-	((struct bpf_insn) {					\
-		.code  = BPF_ALU64 | BPF_MOV | BPF_K,		\
-		.dst_reg = DST,					\
-		.src_reg = 0,					\
-		.off   = 0,					\
-		.imm   = IMM })
-
-#define BPF_EXIT_INSN()						\
-	((struct bpf_insn) {					\
-		.code  = BPF_JMP | BPF_EXIT,			\
-		.dst_reg = 0,					\
-		.src_reg = 0,					\
-		.off   = 0,					\
-		.imm   = 0 })
-
+#define BPF_EXIT_INSN()                                                        \
+	((struct bpf_insn){.code = BPF_JMP | BPF_EXIT,                         \
+			   .dst_reg = 0,                                       \
+			   .src_reg = 0,                                       \
+			   .off = 0,                                           \
+			   .imm = 0})
 
 static int net_setup_ebpf(int sd)
 {
@@ -83,8 +78,8 @@ static void timer_handler()
 int main()
 {
 	struct sigaction sa = {0};
-	sa.sa_handler = &timer_handler ;
-	sigaction ( SIGALRM, &sa, NULL );
+	sa.sa_handler = &timer_handler;
+	sigaction(SIGALRM, &sa, NULL);
 
 	struct itimerval timer = {0};
 	timer.it_value.tv_sec = 1;
@@ -99,13 +94,13 @@ int main()
 
 	char buf[MTU_SIZE];
 
-	while(1) {
+	while (1) {
 		int r = read(fd, buf, MTU_SIZE);
 		if (r == 0) {
 			int err = 0;
 			socklen_t err_len = sizeof(err);
 			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
-			if (err == 0){
+			if (err == 0) {
 				packets += 1;
 				continue;
 			}

@@ -32,7 +32,8 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-static void net_gethostbyname(struct sockaddr_storage *ss, const char *host, int port)
+static void net_gethostbyname(struct sockaddr_storage *ss, const char *host,
+			      int port)
 {
 	memset(ss, 0, sizeof(struct sockaddr_storage));
 
@@ -53,20 +54,19 @@ static void net_gethostbyname(struct sockaddr_storage *ss, const char *host, int
 	return;
 
 got_ipv4:;
-	struct sockaddr_in *sin4 = (struct sockaddr_in*)ss;
+	struct sockaddr_in *sin4 = (struct sockaddr_in *)ss;
 	sin4->sin_family = AF_INET;
 	sin4->sin_port = htons(port);
 	sin4->sin_addr = in_addr;
 	return;
 
 got_ipv6:;
-	struct sockaddr_in6 *sin6 = (struct sockaddr_in6*)ss;
+	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ss;
 	sin6->sin6_family = AF_INET6;
 	sin6->sin6_port = htons(port);
 	sin6->sin6_addr = in6_addr;
 	return;
 }
-
 
 static int net_bind_udp(struct sockaddr_storage *ss)
 {
@@ -84,16 +84,15 @@ static int net_bind_udp(struct sockaddr_storage *ss)
 
 	int zero = 0;
 	r = setsockopt(sd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&zero,
-			   sizeof(zero));
+		       sizeof(zero));
 	if (r < 0) {
 		PFATAL("setsockopt()");
 	}
 
-	r = bind(sd, (struct sockaddr*)ss, sizeof(struct sockaddr_storage));
+	r = bind(sd, (struct sockaddr *)ss, sizeof(struct sockaddr_storage));
 	if (r < 0) {
 		PFATAL("bind()");
 	}
 
 	return sd;
 }
-

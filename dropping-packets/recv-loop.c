@@ -28,8 +28,8 @@ static void timer_handler()
 int main()
 {
 	struct sigaction sa = {0};
-	sa.sa_handler = &timer_handler ;
-	sigaction ( SIGALRM, &sa, NULL );
+	sa.sa_handler = &timer_handler;
+	sigaction(SIGALRM, &sa, NULL);
 
 	struct itimerval timer = {0};
 	timer.it_value.tv_sec = 1;
@@ -42,7 +42,7 @@ int main()
 
 	char buf[MTU_SIZE];
 
-	while(1) {
+	while (1) {
 		int r = read(fd, buf, MTU_SIZE);
 		if (r == 0) {
 			return 0;

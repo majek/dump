@@ -30,8 +30,8 @@ static void timer_handler()
 int main()
 {
 	struct sigaction sa = {0};
-	sa.sa_handler = &timer_handler ;
-	sigaction ( SIGALRM, &sa, NULL );
+	sa.sa_handler = &timer_handler;
+	sigaction(SIGALRM, &sa, NULL);
 
 	struct itimerval timer = {0};
 	timer.it_value.tv_sec = 1;
@@ -44,7 +44,8 @@ int main()
 
 	struct mmsghdr messages[MAX_MSG] = {0};
 
-	/* Not stricly needed since the msghdr is zeroed anyway, but let's be explicit */
+	/* Not stricly needed since the msghdr is zeroed anyway, but let's be
+	 * explicit */
 	int i;
 	for (i = 0; i < MAX_MSG; i++) {
 		struct mmsghdr *msg = &messages[i];
@@ -52,8 +53,9 @@ int main()
 		msg->msg_hdr.msg_iovlen = 0;
 	}
 
-	while(1) {
-		int r = recvmmsg(fd, messages, MAX_MSG, MSG_WAITFORONE | MSG_TRUNC, NULL);
+	while (1) {
+		int r = recvmmsg(fd, messages, MAX_MSG,
+				 MSG_WAITFORONE | MSG_TRUNC, NULL);
 		if (r == 0) {
 			return 0;
 		}

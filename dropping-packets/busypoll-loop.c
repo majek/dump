@@ -31,8 +31,8 @@ static void timer_handler()
 int main()
 {
 	struct sigaction sa = {0};
-	sa.sa_handler = &timer_handler ;
-	sigaction ( SIGALRM, &sa, NULL );
+	sa.sa_handler = &timer_handler;
+	sigaction(SIGALRM, &sa, NULL);
 
 	struct itimerval timer = {0};
 	timer.it_value.tv_sec = 1;
@@ -43,7 +43,7 @@ int main()
 	net_gethostbyname(&listen_addr, "::", 1234);
 	int fd = net_bind_udp(&listen_addr);
 
-	int busy_poll = 50; //ms
+	int busy_poll = 50; // ms
 	int r = setsockopt(fd, SOL_SOCKET, SO_BUSY_POLL, &busy_poll,
 			   sizeof(busy_poll));
 	if (r != 0) {
@@ -68,7 +68,7 @@ int main()
 		iovec->iov_len = MTU_SIZE;
 	}
 
-	while(1) {
+	while (1) {
 		int r = recvmmsg(fd, messages, MAX_MSG, MSG_WAITFORONE, NULL);
 		if (r == 0) {
 			return 0;
