@@ -42,7 +42,7 @@ ip6tables -t raw -I PREROUTING -p tcp --dport 80 -j NOTRACK
 	fmt.Fprintf(os.Stderr, "[+] Nfqueue 34 opened\n")
 
 	icmpSender := NewIcmpSender(v4mtu, v6mtu)
-	fragSender := NewFragSender(512, 512)
+	fragSender := NewFragSender(576-20, 1280-40-8) // 8 bytes for ipv6 frag header
 	traceSender := NewTraceSender()
 
 	go gohttp()
