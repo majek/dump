@@ -1,0 +1,7 @@
+sudo apt-get install bluez-utils      python-bluez bluez-hcidump bluez-gnome bluetooth python-pygame
+sudo l2ping 70:20:84:6D:24:E7
+sudo rfcomm bind NXT 00:16:53:07:5D:9E 1
+
+cat ../../etc/udev/rules.d/70-lego.rules
+BUS=="usb", SYSFS{idVendor}=="0694", GROUP="pi", MODE="0660"
+
